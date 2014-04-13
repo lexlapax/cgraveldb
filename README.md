@@ -39,16 +39,16 @@ the graph will be persisted in databases / tables on disk. These are the databas
 
 1. hexastore
   1. key = one of
-  spo::A::C::B
-  sop::A::B::C
-  ops::B::C::A
-  osp::B::A::C
-  pso::C::A::B
-  pos::C::B::A
- where 
- A is element id for vertex as originating vertex or subject
- B is element id for vertex as terminating vertex or object
- C is element id for edge connecting the vertii or predicate
+    * spo::A::C::B
+    * sop::A::B::C
+    * ops::B::C::A
+    * osp::B::A::C
+    * pso::C::A::B
+    * pos::C::B::A
+  where 
+    * A is element id for vertex as originating vertex or subject
+    * B is element id for vertex as terminating vertex or object
+    * C is element id for edge connecting the vertii or predicate
   1. value = label 
 
 1. property 
