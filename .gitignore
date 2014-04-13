@@ -1,0 +1,2 @@
+# ignore test db files
+*.db
