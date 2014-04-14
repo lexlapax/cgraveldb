@@ -31,14 +31,14 @@ type Vertex interface {
 type Graph interface {
 	String() string
 	AddVertex(id []byte) (Vertex, error)
-	Vertex(id []byte) Vertex
-	DelVertex(vertex Vertex) error
-	Vertices() []Vertex
-	AddEdge(id []byte, outvertex Vertex, invertex Vertex, label string) (Edge, error)
-	Edge(id []byte) Edge
-	DelEdge(edge Edge) error
-	Edges() []Edge
-	EdgeCount() uint
-	VertexCount() uint
-	Close() (bool, error)
+//	Vertex(id []byte) Vertex
+//	DelVertex(vertex Vertex) error
+//	Vertices() []Vertex
+//	AddEdge(id []byte, outvertex *Vertex, invertex *Vertex, label string) (*Edge, error)
+//	Edge(id []byte) Edge
+//	DelEdge(edge Edge) error
+//	Edges() []Edge
+//	EdgeCount() uint
+//	VertexCount() uint
+//	Close() (bool, error)
 }

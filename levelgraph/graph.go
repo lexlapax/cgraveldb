@@ -14,6 +14,7 @@ import (
 var (
 	NoDirectory     = errors.New("need to pass a valid path for a db directory")
 	NilValue     = errors.New("nil value passed in argument")
+	KeyExists = errors.New("key exists in database")
 	metadb = "meta.db"	
 	elementdb = "element.db"	
 	hsdb = "hs.db"	
@@ -70,41 +71,49 @@ func OpenGraph(dbdir string) (core.Graph, error ) {
 	return opengraph(dbdir)
 }
 
-func (db *DBGraph) String() (string) {
+func (db DBGraph) String() (string) {
 	str := fmt.Sprintf("dbdir=%v",db.dbdir)
 	return str
 }
 
 
 func (db *DBGraph) AddVertex(id []byte) (core.Vertex, error) {
+	vertex := new(DBVertex)
 	if id == nil {return nil, NilValue}
-	
-	return nil, nil
+	val,err := db.elements.Get(db.ro, id)
+	if val != nil {return nil, KeyExists}
+	err = db.elements.Put(db.wo, id, []byte(VertexType))
+	if err != nil {return nil, err}
+	vertex.id = id
+	vertex.elementtype = VertexType
+	vertex.db = db
+	return vertex, nil
 }
 
-func (db *DBGraph) Vertex(id []byte) core.Vertex {
-	return nil	
+func (db *DBGraph) Vertex(id []byte) DBVertex {
+	return DBVertex{}
 }
-func (db *DBGraph) DelVertex(vertex core.Vertex) error {
+func (db *DBGraph) DelVertex(vertex DBVertex) error {
 	return nil
 }
-func (db *DBGraph) Vertices() []core.Vertex {
-	return nil	
-}
-
-func (db *DBGraph) AddEdge(id []byte, outvertex core.Vertex, invertex core.Vertex, label string) (core.Edge, error) {
-	return nil, nil	
-}
-
-func (db *DBGraph) Edge(id []byte) core.Edge {
-	return nil	
-}
-func (db *DBGraph) DelEdge(edge core.Edge) error {
-	return nil	
-}
-func (db *DBGraph) Edges() []core.Edge {
+func (db *DBGraph) Vertices() []DBVertex {
 	return nil
 }
+
+func (db *DBGraph) AddEdge(id []byte, outvertex DBVertex, invertex DBVertex, label string) (DBEdge, error) {
+	return DBEdge{}, nil
+}
+
+func (db *DBGraph) Edge(id []byte) DBEdge {
+	return DBEdge{}
+}
+func (db *DBGraph) DelEdge(edge DBEdge) error {
+	return nil
+}
+func (db *DBGraph) Edges() []DBEdge {
+	return nil
+}
+
 func (db *DBGraph) EdgeCount() uint {
 	return 0
 }

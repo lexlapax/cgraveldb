@@ -10,9 +10,16 @@ import (
 		//"github.com/lexlapax/graveldb/core"
 )
 
+type ElementType string
+const (
+	VertexType ElementType = "1"
+	EdgeType ="2"
+)
+
 type DBElement struct {
 	db *DBGraph
 	id []byte
+	elementtype ElementType
 }
 
 func (element *DBElement) Property(prop string) ([]byte) {
