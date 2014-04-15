@@ -71,13 +71,21 @@ func OpenGraph(dbdir string) (core.Graph, error ) {
 	return opengraph(dbdir)
 }
 
-func (db DBGraph) String() (string) {
+func (db *DBGraph) Close() (bool, error) {
+	db.meta.Close()
+	db.elements.Close()
+	db.hs.Close()
+	db.props.Close()
+	return true, nil
+}
+
+func (db *DBGraph) String() (string) {
 	str := fmt.Sprintf("dbdir=%v",db.dbdir)
 	return str
 }
 
 
-func (db *DBGraph) AddVertex(id []byte) (core.Vertex, error) {
+func (db *DBGraph) AddVertex(id []byte) (*core.Vertex, error) {
 	vertex := new(DBVertex)
 	if id == nil {return nil, NilValue}
 	val,err := db.elements.Get(db.ro, id)
@@ -120,6 +128,4 @@ func (db *DBGraph) EdgeCount() uint {
 func (db *DBGraph) VertexCount() uint {
 	return 0
 }
-func (db *DBGraph) Close() (bool, error) {
-	return false, nil
-}
+
