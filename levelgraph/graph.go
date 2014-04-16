@@ -7,7 +7,7 @@ import (
 		"errors"
 		"os"
 		"github.com/jmhodges/levigo"
-		"github.com/lexlapax/graveldb/core"
+		//"github.com/lexlapax/graveldb/core"
 )
 
 // Errors in addition to IO errors.
@@ -67,7 +67,7 @@ func opengraph(dbdir string) (*DBGraph, error) {
 	return db, err
 }
 
-func OpenGraph(dbdir string) (core.Graph, error ) {
+func OpenGraph(dbdir string) (*DBGraph, error ) {
 	return opengraph(dbdir)
 }
 
@@ -85,40 +85,43 @@ func (db *DBGraph) String() (string) {
 }
 
 
-func (db *DBGraph) AddVertex(id []byte) (*core.Vertex, error) {
-	vertex := new(DBVertex)
-	if id == nil {return nil, NilValue}
-	val,err := db.elements.Get(db.ro, id)
-	if val != nil {return nil, KeyExists}
-	err = db.elements.Put(db.wo, id, []byte(VertexType))
-	if err != nil {return nil, err}
+func (db *DBGraph) AddVertex(id []byte) (*DBVertex, error) {
+	var vertex *DBVertex = new(DBVertex)
+	//vertex := new(DBVertex)
 	vertex.id = id
 	vertex.elementtype = VertexType
 	vertex.db = db
+	if id == nil {return vertex, NilValue}
+	val,err := db.elements.Get(db.ro, id)
+	if val != nil {
+		return vertex, KeyExists
+	}
+	err = db.elements.Put(db.wo, id, []byte(VertexType))
+	if err != nil {return vertex, err}
 	return vertex, nil
 }
 
-func (db *DBGraph) Vertex(id []byte) DBVertex {
-	return DBVertex{}
+func (db *DBGraph) Vertex(id []byte) *DBVertex {
+	return nil //DBVertex{}
 }
-func (db *DBGraph) DelVertex(vertex DBVertex) error {
+func (db *DBGraph) DelVertex(vertex *DBVertex) error {
 	return nil
 }
-func (db *DBGraph) Vertices() []DBVertex {
+func (db *DBGraph) Vertices() []*DBVertex {
 	return nil
 }
 
-func (db *DBGraph) AddEdge(id []byte, outvertex DBVertex, invertex DBVertex, label string) (DBEdge, error) {
-	return DBEdge{}, nil
+func (db *DBGraph) AddEdge(id []byte, outvertex *DBVertex, invertex *DBVertex, label string) (*DBEdge, error) {
+	return nil, nil
 }
 
-func (db *DBGraph) Edge(id []byte) DBEdge {
-	return DBEdge{}
-}
-func (db *DBGraph) DelEdge(edge DBEdge) error {
+func (db *DBGraph) Edge(id []byte) *DBEdge {
 	return nil
 }
-func (db *DBGraph) Edges() []DBEdge {
+func (db *DBGraph) DelEdge(edge *DBEdge) error {
+	return nil
+}
+func (db *DBGraph) Edges() []*DBEdge {
 	return nil
 }
 

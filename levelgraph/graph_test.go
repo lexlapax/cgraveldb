@@ -25,17 +25,19 @@ func TestOpenGraph(t *testing.T){
 		assert.Equal(t, "testing.db", fi.Name(), "dbdir name should match" )
 		assert.Equal(t, "dbdir=./testing.db", gdb.String())
 	}
+	gdb.Close()
 }
 
 func TestAddVertex(t *testing.T) {
 	id := []byte("somerandomstringid")
 	dbdir := "./testing.db"
 	gdb,_ := opengraph(dbdir)
-	//vertex, err := gdb.AddVertex(nil)
+	vertex, err := gdb.AddVertex(nil)
 	//assert.Equal(t, nil, vertex)
-	//assert.Equal(t, NilValue, err)
-	vertex, _ := gdb.AddVertex(id)
-	if assert.NotNil(t, vertex) {
+	assert.Equal(t, NilValue, err)
+	vertex, _ = gdb.AddVertex(id)
+	if assert.NotNil(t, &vertex) {
 		assert.Equal(t, id, vertex.Id())
 	}
+	gdb.Close()
 }

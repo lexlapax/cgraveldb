@@ -7,26 +7,26 @@ import (
 		//"errors"
 		//"os"
 		//"github.com/jmhodges/levigo"
-		"github.com/lexlapax/graveldb/core"
+		//"github.com/lexlapax/graveldb/core"
 )
 
 type DBVertex struct {
 	DBElement
 }
 
-func (vertex *DBVertex) Vertices() ([]*core.Vertex) {
+func (vertex *DBVertex) Vertices() ([]*DBVertex) {
 	return nil
 }
 
-func (vertex *DBVertex) OutEdges() ([]*core.Edge) {
+func (vertex *DBVertex) OutEdges() ([]*DBEdge) {
 	return nil
 }
 
-func (vertex *DBVertex) InEdges() ([]*core.Edge) {
+func (vertex *DBVertex) InEdges() ([]*DBEdge) {
 	return nil
 }
 
-func (vertex *DBVertex) AddEdge(outvertex *core.Vertex, label string) (*core.Edge, error) {
+func (vertex *DBVertex) AddEdge(outvertex *DBVertex, label string) (*DBEdge, error) {
 	return nil, nil
 }
 

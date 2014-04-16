@@ -14,23 +14,23 @@ type Element interface {
 type Edge interface {
 	Element
 	Label() string
-	VertexOut() *Vertex
-	VertexIn() *Vertex
+	VertexOut() Vertex
+	VertexIn() Vertex
 	String() string
 }
 
 type Vertex interface {
 	Element
-	Vertices() []*Vertex
-	OutEdges() []*Edge
-	InEdges() []*Edge
-	AddEdge(outvertex *Vertex, label string) (*Edge, error)
+	Vertices() []Vertex
+	OutEdges() []Edge
+	InEdges() []Edge
+	AddEdge(outvertex Vertex, label string) (Edge, error)
 	String() string
 }
 
 type Graph interface {
 	String() string
-	AddVertex(id []byte) (*Vertex, error)
+	AddVertex(id []byte) (Vertex, error)
 //	Vertex(id []byte) *Vertex
 //	DelVertex(vertex *Vertex) error
 //	Vertices() []Vertex

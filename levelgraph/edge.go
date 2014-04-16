@@ -7,7 +7,7 @@ import (
 		//"errors"
 		//"os"
 		//"github.com/jmhodges/levigo"
-		"github.com/lexlapax/graveldb/core"
+		//"github.com/lexlapax/graveldb/core"
 )
 
 type DBEdge struct {
