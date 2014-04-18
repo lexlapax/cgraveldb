@@ -17,9 +17,9 @@ const (
 )
 
 type DBElement struct {
-	db *DBGraph
+	Db *DBGraph
 	id []byte
-	elementtype ElementType
+	Elementtype ElementType
 }
 
 func (element *DBElement) Property(prop string) ([]byte) {

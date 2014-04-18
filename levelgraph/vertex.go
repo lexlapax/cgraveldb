@@ -30,6 +30,8 @@ func (vertex *DBVertex) AddEdge(outvertex *DBVertex, label string) (*DBEdge, err
 	return nil, nil
 }
 
+/*
 func (vertex *DBVertex) String() (string) {
-	return ""
+	return fmt.Sprintf("<DBVertex>id")
 }
+*/
