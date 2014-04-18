@@ -8,6 +8,7 @@ import (
 		"os"
 		"encoding/binary"
 		"github.com/jmhodges/levigo"
+		"path"
 		//"github.com/lexlapax/graveldb/core"
 )
 
@@ -53,16 +54,16 @@ func opengraph(dbdir string) (*DBGraph, error) {
 	db.ro = levigo.NewReadOptions()
 	db.wo = levigo.NewWriteOptions()
 
-	meta, err := levigo.Open(dbdir + "/" + metadb, opts)
+	meta, err := levigo.Open(path.Join(dbdir, metadb), opts)
 	if err != nil {return nil, err}
 	db.meta = meta
-	elements, err := levigo.Open(dbdir + "/" + elementdb, opts)
+	elements, err := levigo.Open(path.Join(dbdir, elementdb), opts)
 	if err != nil {return nil, err}
 	db.elements = elements
-	hs, err := levigo.Open(dbdir + "/" + hsdb, opts)
+	hs, err := levigo.Open(path.Join(dbdir, hsdb), opts)
 	if err != nil {return nil, err}
 	db.hs = hs
-	props, err := levigo.Open(dbdir + "/" + propdb, opts)
+	props, err := levigo.Open(path.Join(dbdir, propdb), opts)
 	if err != nil {return nil, err}
 	db.props = props
 	db.keepcount(VertexType, 0)
@@ -84,7 +85,7 @@ func (db *DBGraph) Close() (bool, error) {
 }
 
 func (db *DBGraph) String() (string) {
-	str := fmt.Sprintf("dbdir=%v",db.dbdir)
+	str := fmt.Sprintf("<DBGraph:dbdir=%v>",db.dbdir)
 	return str
 }
 

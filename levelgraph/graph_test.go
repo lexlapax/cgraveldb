@@ -27,7 +27,7 @@ func TestOpenGraph(t *testing.T){
 		fi, _ := os.Lstat(dbdir)
 		assert.True(t, fi.IsDir(), "dbdir should be a directory")
 		assert.Equal(t, "testing.db", fi.Name(), "dbdir name should match" )
-		assert.Equal(t, "dbdir=./testing.db", gdb.String())
+		assert.Equal(t, "<DBGraph:dbdir=./testing.db>", gdb.String())
 	}
 	gdb.Close()
 	defer cleanup(dbdir)
