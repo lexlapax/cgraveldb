@@ -82,8 +82,8 @@ func TestCloseAndOpen(t *testing.T) {
 
 	cleanup(dbdir)
 	defer cleanup(dbdir)
-
 	gdb, dberr := opengraph(dbdir)
+
 	if dberr != nil { t.Fatal(dberr) }
 	if gdb.EdgeCount() != 0 { t.Error("should have 0 edges")}
 	if gdb.VertexCount() != 0 { t.Error("should have 0 vertices")}
@@ -120,9 +120,9 @@ func TestDelVertex(t *testing.T) {
 
 	cleanup(dbdir)
 	defer cleanup(dbdir)
+	gdb,_ := opengraph(dbdir)
 
 	ida := []byte("somerandomstringid")
-	gdb,_ := opengraph(dbdir)
 
 	err := gdb.DelVertex(nil)
 	assert.Equal(t, NilValue, err)
@@ -150,7 +150,6 @@ func TestVertexCount(t *testing.T) {
 
 	cleanup(dbdir)
 	defer cleanup(dbdir)
-
 	gdb,_ := opengraph(dbdir)
 
 	assert.Equal(t, uint64(0), gdb.VertexCount())
@@ -187,9 +186,9 @@ func TestVertices(t *testing.T) {
 
 	cleanup(dbdir)
 	defer cleanup(dbdir)
+	gdb,_ := opengraph(dbdir)
 
 	ida := []byte("somerandomstringid")
-	gdb,_ := opengraph(dbdir)
 	testvertii := []*DBVertex{}
 	var vertex *DBVertex
 	alpha := []string{"a","b","c","d","e"}
@@ -214,8 +213,8 @@ func TestAddEdge(t *testing.T) {
 
 	cleanup(dbdir)
 	defer cleanup(dbdir)
-
 	gdb,_ := opengraph(dbdir)
+
 	vid1 := []byte("thisisvertex1")
 	vid2 := []byte("thisisvertex2")
 	eid1 := []byte("thisisedge1")
@@ -242,6 +241,9 @@ func TestAddEdge(t *testing.T) {
 		assert.Equal(t, EdgeType, edge1.Elementtype)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, "<DBEdge:thisisedge1,s=thisisvertex1,o=thisisvertex2,l=edgeforward@#DBGraph:dbdir=./testing.db#>", edge1.String())
+		assert.Equal(t, vertex1, edge1.VertexOut())
+		assert.Equal(t, vertex2, edge1.VertexIn())
+		assert.Equal(t, "edgeforward", edge1.Label())
 	}
 
 	edge2, errb := gdb.AddEdge(eid1, vertex1, vertex2, "edgeforward")
@@ -256,8 +258,8 @@ func TestGetEdge(t *testing.T) {
 
 	cleanup(dbdir)
 	defer cleanup(dbdir)
-
 	gdb,_ := opengraph(dbdir)
+
 	vid1 := []byte("thisisvertex1")
 	vid2 := []byte("thisisvertex2")
 	eid1 := []byte("thisisedge1")
@@ -266,19 +268,52 @@ func TestGetEdge(t *testing.T) {
 	vertex1,_ := gdb.AddVertex(vid1)
 	vertex2,_ := gdb.AddVertex(vid2)
 	edge1, _ := gdb.AddEdge(eid1, vertex1, vertex2, "edgeforward")
-	edge2 := gdb.Edge(eid1)
-	assert.Equal(t, edge1, edge2) 
-	/*
-	ida := []byte("somerandomstringid")
-	idb := []byte("idb")
-	vertexa, _ := gdb.AddVertex(ida)
-	vertexb  := gdb.Vertex(ida)
-	assert.Equal(t, vertexa, vertexb)
-	assert.True(t, gdb.Vertex(idb) == nil)
-	vertexc, _ := gdb.AddVertex(idb)
-	vertexd := gdb.Vertex(idb)
-	assert.Equal(t, vertexc, vertexd)
-	*/
+	edge1a := gdb.Edge(eid1)
+	assert.Equal(t, edge1, edge1a)
+
+	//allow duplicates 
+	eid2 := []byte("thisisedge2")
+	edge2, _ := gdb.AddEdge(eid2, vertex1, vertex2, "edgeforward")
+	assert.Equal(t, eid2, edge2.Id())
+	assert.Equal(t, vertex1, edge1.VertexOut())
+	assert.Equal(t, vertex2, edge1.VertexIn())
+	assert.Equal(t, "edgeforward", edge1.Label())
 	gdb.Close()
 }
 
+func TestDelEdge(t *testing.T) {
+	//t.Skip()
+
+	cleanup(dbdir)
+	defer cleanup(dbdir)
+	gdb,_ := opengraph(dbdir)
+
+	vid1 := []byte("thisisvertex1")
+	vid2 := []byte("thisisvertex2")
+	eid1 := []byte("thisisedge1")
+
+	err := gdb.DelEdge(nil)
+	assert.Equal(t, NilValue, err)
+	err = gdb.DelEdge(new(DBEdge))
+	assert.Equal(t, NilValue, err)
+
+
+	edgenull := &DBEdge{new(DBElement),nil,nil,""}
+	edgenull.db = gdb 
+	edgenull.id = eid1 
+	edgenull.Elementtype = EdgeType
+	err = gdb.DelEdge(edgenull)
+	assert.Equal(t, KeyDoesNotExist, err)
+
+	vertex1,_ := gdb.AddVertex(vid1)
+	vertex2,_ := gdb.AddVertex(vid2)
+	edge1, _ := gdb.AddEdge(eid1, vertex1, vertex2, "edgeforward")
+
+	err = gdb.DelEdge(edge1)
+	assert.True(t, err == nil)
+	assert.True(t, gdb.Edge(eid1) == nil)
+	err = gdb.DelEdge(edge1)
+	assert.Equal(t, KeyDoesNotExist, err)
+
+	gdb.Close()
+}

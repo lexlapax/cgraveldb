@@ -26,8 +26,8 @@ func (vertex *DBVertex) InEdges() ([]*DBEdge) {
 	return nil
 }
 
-func (vertex *DBVertex) AddEdge(outvertex *DBVertex, label string) (*DBEdge, error) {
-	return nil, nil
+func (vertex *DBVertex) AddEdge(id []byte, invertex *DBVertex, label string) (*DBEdge, error) {
+	return vertex.db.AddEdge(id, vertex, invertex, label)
 }
 
 

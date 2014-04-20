@@ -214,7 +214,7 @@ func (db *DBGraph) DelVertex(vertex *DBVertex) error {
 	it := db.props.NewIterator(ro)
 	defer it.Close()
 	defer ro.Close()
-	prefix := append(id, []byte("::")...)
+	prefix := append(id, db.recsep...)
 	it.Seek(prefix)
 	propkeys := [][]byte{}
 	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
@@ -293,9 +293,46 @@ func (db *DBGraph) Edge(id []byte) *DBEdge {
 	edge := &DBEdge{&DBElement{db, id, EdgeType}, outvertex, invertex, label}
 	return edge
 }
+
 func (db *DBGraph) DelEdge(edge *DBEdge) error {
+	if edge == nil {	return NilValue }
+	if edge.DBElement == nil { return NilValue }
+	id := edge.Id()
+	if id == nil {	return NilValue }
+	val,err := db.elements.Get(db.ro, id)
+	if err != nil {return err}
+	if val == nil {return KeyDoesNotExist}
+	err = db.elements.Delete(db.wo, id)
+	if err != nil {return err}
+	
+	err = db.edges.Delete(db.wo, id)
+	db.keepcount(EdgeType, -1)
+	
+	// delete all properties data 
+	ro := levigo.NewReadOptions()
+	ro.SetFillCache(false)
+	it := db.props.NewIterator(ro)
+	defer it.Close()
+	defer ro.Close()
+	prefix := append(id, db.recsep...)
+	it.Seek(prefix)
+	propkeys := [][]byte{}
+	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+		propkeys = append(propkeys, it.Key())
+	}
+	wb := levigo.NewWriteBatch()
+	defer wb.Close()
+	for _, propkey := range propkeys {
+		wb.Delete(propkey)
+	}
+	err = db.props.Write(db.wo, wb)
+	if err != nil {return err}
+
+	// todo - delete all hexastore data
+
 	return nil
 }
+
 func (db *DBGraph) Edges() []*DBEdge {
 	return nil
 }
