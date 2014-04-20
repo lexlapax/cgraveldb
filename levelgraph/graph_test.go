@@ -191,6 +191,9 @@ func TestVertices(t *testing.T) {
 	ida := []byte("somerandomstringid")
 	testvertii := []*DBVertex{}
 	var vertex *DBVertex
+
+	assert.True(t, len(gdb.Vertices()) == 0)
+
 	alpha := []string{"a","b","c","d","e"}
 	numb := []string{"1","2","3","4","5"}
 	for _,a := range alpha {
@@ -315,5 +318,40 @@ func TestDelEdge(t *testing.T) {
 	err = gdb.DelEdge(edge1)
 	assert.Equal(t, KeyDoesNotExist, err)
 
+	gdb.Close()
+}
+
+
+func TestEdges(t *testing.T) {
+	//t.Skip()
+
+	cleanup(dbdir)
+	defer cleanup(dbdir)
+	gdb,_ := opengraph(dbdir)
+
+	vid1 := []byte("thisisvertex1")
+	vid2 := []byte("thisisvertex2")
+	eid1 := []byte("thisisedge1")
+
+	vertex1,_ := gdb.AddVertex(vid1)
+	vertex2,_ := gdb.AddVertex(vid2)
+
+	assert.True(t, len(gdb.Edges()) == 0)
+	testedges := []*DBEdge{}
+	var edge *DBEdge
+	alpha := []string{"a","b","c","d","e"}
+	numb := []string{"1","2","3","4","5"}
+	for _,a := range alpha {
+		for _,n := range numb { 
+			edge, _= gdb.AddEdge([]byte(a + "-" + n), vertex1, vertex2, "somedge")
+			testedges = append(testedges, edge)
+		}
+	}
+	assert.Equal(t, testedges, gdb.Edges())
+	lastedge, _ := gdb.AddEdge(eid1, vertex1, vertex2, "edgeforward")
+	assert.NotEqual(t, testedges, gdb.Edges())
+	//keys are lexicaly ordered.. lastedge should be the last in the list
+	testedges = gdb.Edges()
+	assert.Equal(t, lastedge, testedges[len(testedges) - 1])
 	gdb.Close()
 }

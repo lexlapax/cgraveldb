@@ -263,16 +263,30 @@ func (db *DBGraph) AddEdge(id []byte, outvertex *DBVertex, invertex *DBVertex, l
 	err = db.elements.Put(db.wo, id, []byte(EdgeType))
 	if err != nil {return nil, err}
 	edge := &DBEdge{&DBElement{db, id, EdgeType}, outvertex, invertex, label}
-	//edgesval := bytes.
-	edgevalues := [][]byte{}
-	edgevalues = append(edgevalues,outvertex.id, invertex.id, []byte(label))
-	edgerecord := bytes.Join(edgevalues, db.recsep)
+
 	//fmt.Printf("evin=%v\n", edgerecord)
-	err = db.edges.Put(db.wo, id, edgerecord)
+	err = db.edges.Put(db.wo, id, db.toEdgeRecord(outvertex, invertex, label))
 	if err != nil {return nil, err}
 	//todo - add hexascale index
 	db.keepcount(EdgeType, 1)
 	return edge, nil
+}
+
+func (db *DBGraph) toEdgeRecord(outvertex *DBVertex, invertex *DBVertex, label string) ([]byte) {
+	edgevalues := [][]byte{}
+	edgevalues = append(edgevalues,outvertex.id, invertex.id, []byte(label))
+	edgerecord := bytes.Join(edgevalues, db.recsep)
+	return edgerecord
+}
+
+func (db *DBGraph) fromEdgeRecord(record []byte) (*DBVertex, *DBVertex, string) {
+	if record == nil { return nil, nil, ""}
+	edgevalues := bytes.Split(record, db.recsep)
+
+	outvertex := db.Vertex(edgevalues[0])
+	invertex := db.Vertex(edgevalues[1])
+	label := string(edgevalues[2][:])
+	return outvertex, invertex, label
 }
 
 func (db *DBGraph) Edge(id []byte) *DBEdge {
@@ -284,12 +298,8 @@ func (db *DBGraph) Edge(id []byte) *DBEdge {
 	val, err = db.edges.Get(db.ro, id)
 	if err != nil {return nil}
 	if val == nil {return nil}
+	outvertex, invertex, label := db.fromEdgeRecord(val)
 	//fmt.Printf("evout=%v\n", val)
-	edgevalues := bytes.Split(val, db.recsep)
-
-	outvertex := db.Vertex(edgevalues[0])
-	invertex := db.Vertex(edgevalues[1])
-	label := string(edgevalues[2][:])
 	edge := &DBEdge{&DBElement{db, id, EdgeType}, outvertex, invertex, label}
 	return edge
 }
@@ -334,7 +344,23 @@ func (db *DBGraph) DelEdge(edge *DBEdge) error {
 }
 
 func (db *DBGraph) Edges() []*DBEdge {
-	return nil
+	edges := []*DBEdge{}
+	var edge *DBEdge
+	ro := levigo.NewReadOptions()
+	ro.SetFillCache(false)
+	it := db.edges.NewIterator(ro)
+	defer it.Close()
+	defer ro.Close()
+	it.SeekToFirst()
+	var label string
+	var outvertex, invertex *DBVertex
+	for it = it; it.Valid(); it.Next() {
+		outvertex, invertex, label = db.fromEdgeRecord(it.Value())
+
+		edge = &DBEdge{&DBElement{db, it.Key(), EdgeType}, outvertex, invertex, label}
+		edges = append(edges, edge)
+	}
+	return edges
 }
 
 func (db *DBGraph) EdgeCount() uint64 {
