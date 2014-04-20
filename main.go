@@ -44,6 +44,28 @@ func readFromDb(db *levigo.DB){
 
 }
 
+func BytesTest() {
+	a := []byte("a")
+	b := []byte("b")
+	c := []byte("c")
+	d := []byte("")
+	sep := []byte("\x1f")
+	combined := [][]byte{}
+	combined = append(combined,a,b,c,d)
+	flat := bytes.Join(combined, sep)
+	
+	//combined = append(combined,b)
+	fmt.Printf("combined=%v\n", combined)
+	fmt.Printf("flat=%v\n", flat)
+	split := bytes.Split(flat, sep)
+	fmt.Printf("splitindiv=%v %v %v\n", split[0], split[1], split[2])
+	for _, a := range bytes.Split(flat,sep) {
+		fmt.Printf("%v\n", string(a[:]))
+	}
+	fmt.Printf("split=%v\n", split)
+
+}
+
 func DbTest() {
 	fmt.Println("yo starting")
 	opts := levigo.NewOptions()
@@ -67,7 +89,7 @@ func DbTest() {
 
 
 func main() {
-	DbTest()
+	BytesTest()
 }
 
 

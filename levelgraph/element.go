@@ -17,7 +17,7 @@ const (
 )
 
 type DBElement struct {
-	Db *DBGraph
+	db *DBGraph
 	id []byte
 	Elementtype ElementType
 }
@@ -42,4 +42,7 @@ func (element *DBElement) Id() ([]byte) {
 	return element.id
 }
 
+func (element *DBElement) IdAsString() (string) {
+	return string(element.id[:])
+}
 

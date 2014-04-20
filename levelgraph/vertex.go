@@ -3,7 +3,7 @@ package levelgraph
 
 import (
 		//"bytes"
-		//"fmt"
+		"fmt"
 		//"errors"
 		//"os"
 		//"github.com/jmhodges/levigo"
@@ -11,7 +11,7 @@ import (
 )
 
 type DBVertex struct {
-	DBElement
+	*DBElement
 }
 
 func (vertex *DBVertex) Vertices() ([]*DBVertex) {
@@ -30,8 +30,8 @@ func (vertex *DBVertex) AddEdge(outvertex *DBVertex, label string) (*DBEdge, err
 	return nil, nil
 }
 
-/*
+
 func (vertex *DBVertex) String() (string) {
-	return fmt.Sprintf("<DBVertex>id")
+	str := fmt.Sprintf("<DBVertex:%v@%v>",vertex.IdAsString(), vertex.db)
+	return str
 }
-*/

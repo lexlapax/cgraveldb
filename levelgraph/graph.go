@@ -19,20 +19,27 @@ var (
 	KeyExists = errors.New("key exists in database")
 	KeyDoesNotExist = errors.New("key does not exist in database")
 	metadb = "meta.db"	
-	elementdb = "element.db"	
-	hsdb = "hs.db"	
-	propdb = "prop.db"	
+	elementdb = "element.db"
+	edgedb = "edge.db"	
+	hexaindexdb = "hexaindex.db"
+	propdb = "prop.db"
+	recsep = "\x1f" //the ascii unit separator dec val 31
+	propVertiiCount = "vertiicount"
+	propEdgeCount = "edgecount"
+	propRecSep = "recsep"
 )
 
 type DBGraph struct {
 	meta *levigo.DB
 	elements *levigo.DB
-	hs *levigo.DB
+	edges *levigo.DB
+	hexaindex *levigo.DB
 	props *levigo.DB
 	dbdir string
 	opts *levigo.Options
 	ro *levigo.ReadOptions
 	wo *levigo.WriteOptions
+	recsep []byte
 }
 
 func opengraph(dbdir string) (*DBGraph, error) {
@@ -45,6 +52,8 @@ func opengraph(dbdir string) (*DBGraph, error) {
 	}
 	db := new(DBGraph)
 	db.dbdir = dbdir
+	db.recsep = []byte(recsep)
+
 	opts := levigo.NewOptions()
 	opts.SetCache(levigo.NewLRUCache(3<<30))
 	opts.SetCreateIfMissing(true)
@@ -57,19 +66,34 @@ func opengraph(dbdir string) (*DBGraph, error) {
 	meta, err := levigo.Open(path.Join(dbdir, metadb), opts)
 	if err != nil {return nil, err}
 	db.meta = meta
+	recsepbytes, _ := db.getDbProperty(propRecSep)
+	if recsepbytes == nil {
+		recsepbytes = []byte(recsep)
+		_,err = db.putDbProperty(propRecSep,recsepbytes)
+		if err != nil {return nil, err}
+	}
+	db.recsep = recsepbytes
+
 	elements, err := levigo.Open(path.Join(dbdir, elementdb), opts)
 	if err != nil {return nil, err}
 	db.elements = elements
-	hs, err := levigo.Open(path.Join(dbdir, hsdb), opts)
+
+	edges, err :=  levigo.Open(path.Join(dbdir, edgedb), opts)
 	if err != nil {return nil, err}
-	db.hs = hs
+	db.edges = edges
+	
+	hexaindex, err := levigo.Open(path.Join(dbdir, hexaindexdb), opts)
+	if err != nil {return nil, err}
+	db.hexaindex = hexaindex
+	
 	props, err := levigo.Open(path.Join(dbdir, propdb), opts)
 	if err != nil {return nil, err}
 	db.props = props
+	
 	db.keepcount(VertexType, 0)
 	db.keepcount(EdgeType, 0)
 
-	return db, err
+	return db, nil
 }
 
 func OpenGraph(dbdir string) (*DBGraph, error ) {
@@ -79,30 +103,78 @@ func OpenGraph(dbdir string) (*DBGraph, error ) {
 func (db *DBGraph) Close() (bool, error) {
 	db.meta.Close()
 	db.elements.Close()
-	db.hs.Close()
+	db.edges.Close()
+	db.hexaindex.Close()
 	db.props.Close()
 	return true, nil
 }
 
 func (db *DBGraph) String() (string) {
-	str := fmt.Sprintf("<DBGraph:dbdir=%v>",db.dbdir)
+	str := fmt.Sprintf("#DBGraph:dbdir=%v#",db.dbdir)
 	return str
 }
 
+func(db *DBGraph) getDbProperty(prop string) ([]byte, error){
+	if prop == "" {return nil, NilValue}
+	val, err := db.meta.Get(db.ro, []byte(prop))
+	if err != nil {return nil, err}
+	return val, nil
+}
+
+func(db *DBGraph) putDbProperty(prop string, val []byte) ([]byte, error){
+	if prop == "" {return nil, NilValue}
+	key := []byte(prop)
+	oldval, err := db.meta.Get(db.ro, key)
+	if err != nil {return nil, err}
+	err2 := db.meta.Put(db.wo, key, val)
+	if err2 != nil {return nil, err}
+	return oldval, nil
+}
+
+
+func (db *DBGraph) keepcount(etype ElementType, upordown int) (uint64) {
+	var storedcount, returncount uint64
+	var key string
+	if etype == VertexType {
+		key = propVertiiCount
+	} else {
+		key = propEdgeCount
+	}
+	//wb := levigo.NewWriteBatch()
+	//defer wb.Close()
+	val, _ := db.getDbProperty(key)
+	if val == nil {
+		storedcount = 0
+		upordown = 0
+	} else {
+		storedcount, _ = binary.Uvarint(val)
+	}
+	switch upordown {
+		case -1:
+			returncount = storedcount - 1
+		case 1:
+			returncount = storedcount + 1
+		default:
+			returncount = storedcount
+	}
+	if returncount != storedcount || val == nil {
+		bufsize := binary.Size(returncount)
+		buf := make([]byte, bufsize)
+		binary.PutUvarint(buf, returncount)
+		db.putDbProperty(key, buf)
+	}
+	return returncount
+}
 
 func (db *DBGraph) AddVertex(id []byte) (*DBVertex, error) {
-	var vertex *DBVertex = new(DBVertex)
-	//vertex := new(DBVertex)
 	if id == nil {return nil, NilValue}
-	val,err := db.elements.Get(db.ro, id)
+	val, err := db.elements.Get(db.ro, id)
 	if val != nil {
 		return nil, KeyExists
 	}
 	err = db.elements.Put(db.wo, id, []byte(VertexType))
 	if err != nil {return nil, err}
-	vertex.id = id
-	vertex.Elementtype = VertexType
-	vertex.Db = db
+	vertex := &DBVertex{&DBElement{db,id,VertexType}}
 	db.keepcount(VertexType, 1)
 	return vertex, nil
 }
@@ -111,13 +183,21 @@ func (db *DBGraph) Vertex(id []byte) *DBVertex {
 	if id == nil {return nil }
 	val,err := db.elements.Get(db.ro, id)
 	if err != nil {return nil}
+	if val == nil {return nil}
 	if ElementType(val) != VertexType {return nil}
-	vertex := &DBVertex{DBElement{db, id, VertexType}}
+	vertex := &DBVertex{&DBElement{db, id, VertexType}}
+	/*
+	vertex := new(DBVertex)
+	vertex.db = db
+	vertex.id = id
+	vertex.Elementtype = VertexType
+	*/
 	return vertex
 }
 
 func (db *DBGraph) DelVertex(vertex *DBVertex) error {
 	if vertex == nil {	return NilValue }
+	if vertex.DBElement == nil { return NilValue }
 	id := vertex.Id()
 	if id == nil {	return NilValue }
 	val,err := db.elements.Get(db.ro, id)
@@ -164,56 +244,54 @@ func (db *DBGraph) Vertices() []*DBVertex {
 	it.SeekToFirst()
 	for it = it; it.Valid(); it.Next() {
 		if ElementType(it.Value()) == VertexType {
-			vertex = new(DBVertex)
-			vertex.id = it.Key()
-			vertex.Elementtype = VertexType
-			vertex.Db = db
+			vertex = &DBVertex{&DBElement{db, it.Key(), VertexType}}
 			vertii = append(vertii, vertex)
 		}
 	}
 	return vertii
 }
 
-func (db *DBGraph) keepcount(etype ElementType, upordown int) (uint64) {
-	var storedcount, returncount uint64
-	var key []byte
-	if etype == VertexType {
-		key = []byte("vertii")
-	} else {
-		key = []byte("edges")
-	}
-	wb := levigo.NewWriteBatch()
-	defer wb.Close()
-	val, _ := db.meta.Get(db.ro,key)
-	if val == nil {
-		storedcount = 0
-		upordown = 0
-	} else {
-		storedcount, _ = binary.Uvarint(val)
-	}
-	switch upordown {
-		case -1:
-			returncount = storedcount - 1
-		case 1:
-			returncount = storedcount + 1
-		default:
-			returncount = storedcount
-	}
-	if returncount != storedcount || val == nil {
-		bufsize := binary.Size(returncount)
-		buf := make([]byte, bufsize)
-		binary.PutUvarint(buf, returncount)
-		_ = db.meta.Put(db.wo, key, buf)
-	}
-	return returncount
-}
-
 func (db *DBGraph) AddEdge(id []byte, outvertex *DBVertex, invertex *DBVertex, label string) (*DBEdge, error) {
-	return nil, nil
+	if (id == nil) {return nil, NilValue}
+	if (outvertex == nil) {return nil, NilValue}
+	if (invertex == nil) {return nil, NilValue}
+
+	val,err := db.elements.Get(db.ro, id)
+	if val != nil {
+		return nil, KeyExists
+	}
+	err = db.elements.Put(db.wo, id, []byte(EdgeType))
+	if err != nil {return nil, err}
+	edge := &DBEdge{&DBElement{db, id, EdgeType}, outvertex, invertex, label}
+	//edgesval := bytes.
+	edgevalues := [][]byte{}
+	edgevalues = append(edgevalues,outvertex.id, invertex.id, []byte(label))
+	edgerecord := bytes.Join(edgevalues, db.recsep)
+	//fmt.Printf("evin=%v\n", edgerecord)
+	err = db.edges.Put(db.wo, id, edgerecord)
+	if err != nil {return nil, err}
+	//todo - add hexascale index
+	db.keepcount(EdgeType, 1)
+	return edge, nil
 }
 
 func (db *DBGraph) Edge(id []byte) *DBEdge {
-	return nil
+	if id == nil {return nil }
+	val,err := db.elements.Get(db.ro, id)
+	if err != nil {return nil}
+	if val == nil {return nil}
+	if ElementType(val) != EdgeType {return nil}
+	val, err = db.edges.Get(db.ro, id)
+	if err != nil {return nil}
+	if val == nil {return nil}
+	//fmt.Printf("evout=%v\n", val)
+	edgevalues := bytes.Split(val, db.recsep)
+
+	outvertex := db.Vertex(edgevalues[0])
+	invertex := db.Vertex(edgevalues[1])
+	label := string(edgevalues[2][:])
+	edge := &DBEdge{&DBElement{db, id, EdgeType}, outvertex, invertex, label}
+	return edge
 }
 func (db *DBGraph) DelEdge(edge *DBEdge) error {
 	return nil
