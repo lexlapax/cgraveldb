@@ -332,3 +332,45 @@ func TestEdges(t *testing.T) {
 	testedges = gdb.Edges()
 	assert.Equal(t, lastedge, testedges[len(testedges) - 1])
 }
+
+
+func TestEdgeCount(t *testing.T) {
+	//t.Skip()
+	cleanup(dbdir)
+	defer cleanup(dbdir)
+	gdb,_ := opengraph(dbdir)
+	defer gdb.Close()
+
+	assert.Equal(t, uint64(0), gdb.EdgeCount())
+
+	vid1 := []byte("thisisvertex1")
+	vid2 := []byte("thisisvertex2")
+	eid1 := []byte("thisisedge1")
+
+	vertex1,_ := gdb.AddVertex(vid1)
+	vertex2,_ := gdb.AddVertex(vid2)
+
+	edge1,_ := gdb.AddEdge(eid1, vertex1, vertex2, "edgeforward")
+	assert.Equal(t, uint64(1), gdb.EdgeCount())
+
+	testedges := []*DBEdge{}
+	var edge *DBEdge
+	alpha := []string{"a","b","c","d","e"}
+	numb := []string{"1","2","3","4","5"}
+	for _,a := range alpha {
+		for _,n := range numb { 
+			edge, _= gdb.AddEdge([]byte(a + "-" + n), vertex1, vertex2, "somedge")
+			testedges = append(testedges, edge)
+		}
+	}
+	numv := len(testedges)
+	assert.Equal(t, uint64(numv + 1), gdb.EdgeCount())
+	gdb.DelEdge(edge1)
+	assert.Equal(t, uint64(numv), gdb.EdgeCount())
+	for i :=0; i < numv; i++ {
+		gdb.DelEdge(testedges[i])
+		assert.Equal(t, uint64(numv - (i + 1)), gdb.EdgeCount() )
+	}
+	assert.Equal(t, uint64(0), gdb.EdgeCount())
+}
+
