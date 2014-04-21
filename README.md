@@ -10,6 +10,7 @@ uses leveldb as a backing store
 it sort of works right now..
 it's a very basic property graph.. 
 there are no optimizations for queries yet 
+there is no write collision prevention, yet, so do writes serially (addvertex, addedge, deletevertex, deleteedge)
 
 just follow the graph_test.go - open a graph, add/delete vertices, add/delete edges, and query using edge following, e.g vertex.OutEdges() /vertex.InEdges() and edge.OutVertex(), edge.InVertex().. 
 
