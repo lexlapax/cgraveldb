@@ -10,16 +10,20 @@ type DBVertex struct {
 	*DBElement
 }
 
+/*
+
 func (vertex *DBVertex) Vertices() ([]*DBVertex) {
 	return nil
 }
 
+*/
+
 func (vertex *DBVertex) OutEdges() ([]*DBEdge) {
-	return nil
+	return vertex.db.VertexOutEdges(vertex)
 }
 
 func (vertex *DBVertex) InEdges() ([]*DBEdge) {
-	return nil
+	return vertex.db.VertexInEdges(vertex)
 }
 
 func (vertex *DBVertex) AddEdge(id []byte, invertex *DBVertex, label string) (*DBEdge, error) {

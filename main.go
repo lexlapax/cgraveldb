@@ -44,25 +44,66 @@ func readFromDb(db *levigo.DB){
 
 }
 
+
+func joinBytes(sep []byte, elements ...[]byte) ([]byte) {
+	if len(elements) < 1 { return []byte{} } 
+	return bytes.Join(elements, sep)
+}
+
+func splitBytes(sep []byte, elements []byte) (int, [][]byte) {
+	if elements == nil {return 0, nil}
+	elementarr := bytes.Split(elements, sep)
+	n := len(elementarr)
+	return n, elementarr
+}
+
+
+
 func BytesTest() {
 	a := []byte("a")
 	b := []byte("b")
 	c := []byte("c")
-	d := []byte("")
+	d := []byte("d")
 	sep := []byte("\x1f")
-	combined := [][]byte{}
-	combined = append(combined,a,b,c,d)
-	flat := bytes.Join(combined, sep)
 	
-	//combined = append(combined,b)
-	fmt.Printf("combined=%v\n", combined)
-	fmt.Printf("flat=%v\n", flat)
-	split := bytes.Split(flat, sep)
-	fmt.Printf("splitindiv=%v %v %v\n", split[0], split[1], split[2])
-	for _, a := range bytes.Split(flat,sep) {
-		fmt.Printf("%v\n", string(a[:]))
-	}
-	fmt.Printf("split=%v\n", split)
+	joint := joinBytes(sep)
+	fmt.Printf("0=%v, %v\n", joint, string(joint[:]))
+
+	joint = joinBytes(sep, a)
+	fmt.Printf("1=%v, %v\n", joint, string(joint[:]))
+	n, split := splitBytes(sep, joint)
+	fmt.Printf("1=%v, %v\n", n, split)
+
+
+	joint = joinBytes(sep, a, b)
+	fmt.Printf("2=%v, %v\n", joint, string(joint[:]))
+	n, split = splitBytes(sep, joint)
+	fmt.Printf("2=%v, %v\n", n, split)
+
+	joint = joinBytes(sep, a, b, c)
+	fmt.Printf("3=%v, %v\n", joint, string(joint[:]))
+	n, split = splitBytes(sep, joint)
+	fmt.Printf("3=%v, %v\n", n, split)
+
+	joint = joinBytes(sep, a, b, c, d)
+	fmt.Printf("4=%v, %v\n", joint, string(joint[:]))
+	n, split = splitBytes(sep, joint)
+	fmt.Printf("4=%v, %v\n", n, split)
+
+
+	// combined := [][]byte{}
+	// combined = append(combined,a,b,c,d)
+	// flat := bytes.Join(combined, sep)
+	
+	// //combined = append(combined,b)
+	// fmt.Printf("combined=%v\n", combined)
+	// fmt.Printf("flat=%v\n", flat)
+	// split := bytes.Split(flat, sep)
+	// fmt.Printf("splitindiv=%v %v %v\n", split[0], split[1], split[2])
+	// for _, a := range bytes.Split(flat,sep) {
+	// 	fmt.Printf("%v\n", string(a[:]))
+	// }
+	// fmt.Printf("split=%v\n", split)
 
 }
 

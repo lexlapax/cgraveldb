@@ -18,6 +18,7 @@ var (
 	NilValue     = errors.New("nil value passed in argument")
 	KeyExists = errors.New("key exists in database")
 	KeyDoesNotExist = errors.New("key does not exist in database")
+	InvalidParameterValue = errors.New("the value of parameter passed is invalid")
 	metadb = "meta.db"	
 	elementdb = "element.db"
 	edgedb = "edge.db"	
@@ -28,6 +29,32 @@ var (
 	propEdgeCount = "edgecount"
 	propRecSep = "recsep"
 )
+
+// * spo::A::C::B
+// * sop::A::B::C
+// * ops::B::C::A
+// * osp::B::A::C
+// * pso::C::A::B
+// * pos::C::B::A
+type HexaIndexType string
+const (
+	SPO HexaIndexType = "1"
+	SOP HexaIndexType = "2"
+	OPS HexaIndexType = "3"
+	OSP HexaIndexType = "4"
+	PSO HexaIndexType = "5"
+	POS HexaIndexType = "6"
+)
+
+type HexaIndexKeys struct {
+	spo []byte
+	sop []byte
+	ops []byte
+	osp []byte
+	pso []byte
+	pos []byte
+}
+
 
 type DBGraph struct {
 	meta *levigo.DB
@@ -228,7 +255,14 @@ func (db *DBGraph) DelVertex(vertex *DBVertex) error {
 	err = db.props.Write(db.wo, wb)
 	if err != nil {return err}
 
-	// todo - delete all hexastore data
+	// delete all hexastore data
+	for _, edge := range db.vertexEdges(0, vertex) {
+		db.DelEdge(edge)
+	}
+
+	for _, edge := range db.vertexEdges(1, vertex) {
+		db.DelEdge(edge)
+	}
 
 	return nil
 }
@@ -251,6 +285,99 @@ func (db *DBGraph) Vertices() []*DBVertex {
 	return vertii
 }
 
+func (db *DBGraph) vertexEdges(outorin int, vertex *DBVertex) ([]*DBEdge) {
+	edges := []*DBEdge{}
+	if vertex == nil || vertex.id == nil { return edges }
+	
+	// outorin == 0 is out, 1 = in
+	//prefix := 
+	var prefix []byte
+	if outorin == 0 {
+		prefix = joinBytes(db.recsep, []byte(SPO), vertex.id)
+	} else if outorin == 1 {
+		prefix = joinBytes(db.recsep, []byte(OPS), vertex.id)
+	} else {
+		return edges
+	}
+	ro := levigo.NewReadOptions()
+	ro.SetFillCache(false)
+	it := db.hexaindex.NewIterator(ro)
+	defer it.Close()
+	defer ro.Close()
+	it.Seek(prefix)
+
+	//var err error
+	//var vouid, vinid, eid []byte
+	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+		_, _, eid, _ := idsFromHexaKey(db.recsep, it.Key())
+		edges = append(edges, db.Edge(eid))
+	}
+
+	return edges
+
+}
+
+func (db *DBGraph) VertexOutEdges(vertex *DBVertex) ([]*DBEdge) {
+	return db.vertexEdges(0, vertex)
+}
+
+func (db *DBGraph) VertexInEdges(vertex *DBVertex) ([]*DBEdge) {
+	return db.vertexEdges(1, vertex)
+}
+
+func idsFromHexaKey(sep []byte, elements []byte) ([]byte, []byte, []byte, error) {
+	if elements == nil { return nil, nil, nil, NilValue }
+	elementarr := bytes.Split(elements, sep)
+	if len(elementarr) != 4 {return nil,nil,nil, InvalidParameterValue }
+	var subject, object, predicate []byte
+
+	switch HexaIndexType(elementarr[0]) {
+		case SPO:
+			subject = elementarr[1]
+			object = elementarr[3]
+			predicate = elementarr[2]
+		case SOP:
+			subject = elementarr[1]
+			object = elementarr[2]
+			predicate = elementarr[3]
+		case OPS:
+			subject = elementarr[3]
+			object = elementarr[1]
+			predicate = elementarr[2]
+		case OSP:
+			subject = elementarr[2]
+			object = elementarr[1]
+			predicate = elementarr[3]
+		case PSO:
+			subject = elementarr[2]
+			object = elementarr[3]
+			predicate = elementarr[1]
+		case POS:
+			subject = elementarr[3]
+			object = elementarr[2]
+			predicate = elementarr[1]
+		default:
+			subject, object, predicate = nil, nil, nil
+	}
+
+	if subject == nil { return nil, nil, nil, InvalidParameterValue }
+	return subject, object, predicate, nil
+
+}
+
+func newHexaIndexKey(sep []byte, subject []byte, object []byte, predicate []byte) (*HexaIndexKeys, error) {
+	if sep == nil || subject == nil || object ==nil || predicate == nil { return nil, NilValue }
+	hi := new(HexaIndexKeys)
+	hi.spo = joinBytes(sep, []byte(SPO), subject, predicate, object)
+	hi.sop = joinBytes(sep, []byte(SOP), subject, object, predicate)
+	hi.ops = joinBytes(sep, []byte(OPS), object, predicate, subject)
+	hi.osp = joinBytes(sep, []byte(OSP), object, subject, predicate)
+	hi.pso = joinBytes(sep, []byte(PSO), predicate, subject, object)
+	hi.pos = joinBytes(sep, []byte(POS), predicate, object, subject)
+	return hi, nil
+}
+
+
 func (db *DBGraph) AddEdge(id []byte, outvertex *DBVertex, invertex *DBVertex, label string) (*DBEdge, error) {
 	if (id == nil) {return nil, NilValue}
 	if (outvertex == nil) {return nil, NilValue}
@@ -264,20 +391,43 @@ func (db *DBGraph) AddEdge(id []byte, outvertex *DBVertex, invertex *DBVertex, l
 	if err != nil {return nil, err}
 	edge := &DBEdge{&DBElement{db, id, EdgeType}, outvertex, invertex, label}
 
-	//fmt.Printf("evin=%v\n", edgerecord)
-	err = db.edges.Put(db.wo, id, db.toEdgeRecord(outvertex, invertex, label))
+	labelbyte := []byte(label)
+	//err = db.edges.Put(db.wo, id, db.toEdgeRecord(outvertex, invertex, label))
+	err = db.edges.Put(db.wo, id, joinBytes(db.recsep, outvertex.id, invertex.id, labelbyte))
 	if err != nil {return nil, err}
-	//todo - add hexascale index
+
+	// //todo - add hexascale index
+	hi, _ := newHexaIndexKey(db.recsep, outvertex.id, invertex.id, id)
+
+	wb := levigo.NewWriteBatch()
+	defer wb.Close()
+	wb.Put(hi.spo, labelbyte)
+	wb.Put(hi.sop, labelbyte)
+	wb.Put(hi.ops, labelbyte)
+	wb.Put(hi.osp, labelbyte)
+	wb.Put(hi.pso, labelbyte)
+	wb.Put(hi.pos, labelbyte)
+
+	err = db.hexaindex.Write(db.wo, wb)
+	if err != nil {return nil, err}
+
 	db.keepcount(EdgeType, 1)
 	return edge, nil
 }
 
-func (db *DBGraph) toEdgeRecord(outvertex *DBVertex, invertex *DBVertex, label string) ([]byte) {
-	edgevalues := [][]byte{}
-	edgevalues = append(edgevalues,outvertex.id, invertex.id, []byte(label))
-	edgerecord := bytes.Join(edgevalues, db.recsep)
-	return edgerecord
+func joinBytes(sep []byte, elements ...[]byte) ([]byte) {
+	if len(elements) < 1 { return []byte{} } 
+	return bytes.Join(elements, sep)
 }
+
+/*
+func splitBytes(sep []byte, elements []byte) (int, [][]byte) {
+	if elements == nil {return 0, nil}
+	elementarr := bytes.Split(elements, sep)
+	n := len(elementarr)
+	return n, elementarr
+}
+*/
 
 func (db *DBGraph) fromEdgeRecord(record []byte) (*DBVertex, *DBVertex, string) {
 	if record == nil { return nil, nil, ""}
@@ -339,7 +489,20 @@ func (db *DBGraph) DelEdge(edge *DBEdge) error {
 	if err != nil {return err}
 
 	// todo - delete all hexastore data
+	// //todo - add hexascale index
+	hi, _ := newHexaIndexKey(db.recsep, edge.subject.id, edge.object.id, edge.id)
 
+	wb2 := levigo.NewWriteBatch()
+	defer wb2.Close()
+	wb2.Delete(hi.spo)
+	wb2.Delete(hi.sop)
+	wb2.Delete(hi.ops)
+	wb2.Delete(hi.osp)
+	wb2.Delete(hi.pso)
+	wb2.Delete(hi.pos)
+
+	err = db.hexaindex.Write(db.wo, wb2)
+	if err != nil {return err}
 	return nil
 }
 
