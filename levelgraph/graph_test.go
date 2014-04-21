@@ -11,16 +11,6 @@ import (
 	//"github.com/lexlapax/graveldb/core"	
 )
 
-
-var (
-	dbdir = "./testing.db"
-)
-
-
-func cleanup(dbdir string) {
-	os.RemoveAll(dbdir)
-}
-
 func TestOpenGraph(t *testing.T){
 	cleanup(dbdir)
 	defer cleanup(dbdir)
@@ -52,10 +42,10 @@ func TestOpenGraph(t *testing.T){
 
 func TestAddVertex(t *testing.T) {
 	//t.Skip()
-
 	cleanup(dbdir)
 	defer cleanup(dbdir)
 	gdb,_ := opengraph(dbdir)
+	defer gdb.Close()
 
 	id := []byte("somerandomstringid")
 	vertex, err := gdb.AddVertex(nil)
@@ -72,14 +62,11 @@ func TestAddVertex(t *testing.T) {
 	vertexb, errb := gdb.AddVertex(id) 
 	assert.True(t, vertexb == nil)
 	assert.Equal(t, KeyExists, errb )
-
-	gdb.Close()
 }
 
 
 func TestCloseAndOpen(t *testing.T) {
 	//t.Skip()
-
 	cleanup(dbdir)
 	defer cleanup(dbdir)
 	gdb, dberr := opengraph(dbdir)
@@ -98,10 +85,10 @@ func TestCloseAndOpen(t *testing.T) {
 
 func TestGetVertex(t *testing.T) {
 	//t.Skip()
-
 	cleanup(dbdir)
 	defer cleanup(dbdir)
 	gdb,_ := opengraph(dbdir)
+	defer gdb.Close()
 
 	ida := []byte("somerandomstringid")
 	idb := []byte("idb")
@@ -112,15 +99,14 @@ func TestGetVertex(t *testing.T) {
 	vertexc, _ := gdb.AddVertex(idb)
 	vertexd := gdb.Vertex(idb)
 	assert.Equal(t, vertexc, vertexd)
-	gdb.Close()
 }
 
 func TestDelVertex(t *testing.T) {
 	//t.Skip()
-
 	cleanup(dbdir)
 	defer cleanup(dbdir)
 	gdb,_ := opengraph(dbdir)
+	defer gdb.Close()
 
 	ida := []byte("somerandomstringid")
 
@@ -142,15 +128,14 @@ func TestDelVertex(t *testing.T) {
 	assert.True(t, gdb.Vertex(ida) == nil)
 	err = gdb.DelVertex(vertexa)
 	assert.Equal(t, KeyDoesNotExist, err)
-	gdb.Close()
 }
 
 func TestVertexCount(t *testing.T) {
 	//t.Skip()
-
 	cleanup(dbdir)
 	defer cleanup(dbdir)
 	gdb,_ := opengraph(dbdir)
+	defer gdb.Close()
 
 	assert.Equal(t, uint64(0), gdb.VertexCount())
 
@@ -177,16 +162,15 @@ func TestVertexCount(t *testing.T) {
 		assert.Equal(t, uint64(numv - (i + 1)), gdb.VertexCount() )
 	}
 	assert.Equal(t, uint64(0), gdb.VertexCount())
-	gdb.Close()
 }
 
 
 func TestVertices(t *testing.T) {
 	//t.Skip()
-
 	cleanup(dbdir)
 	defer cleanup(dbdir)
 	gdb,_ := opengraph(dbdir)
+	defer gdb.Close()
 
 	ida := []byte("somerandomstringid")
 	testvertii := []*DBVertex{}
@@ -208,15 +192,14 @@ func TestVertices(t *testing.T) {
 	//keys are lexicaly ordered.. lastvertex should be the last in the list
 	testvertii = gdb.Vertices()
 	assert.Equal(t, lastvertex, testvertii[len(testvertii) - 1])
-	gdb.Close()
 }
 
 func TestAddEdge(t *testing.T) {
 	//t.Skip()
-
 	cleanup(dbdir)
 	defer cleanup(dbdir)
 	gdb,_ := opengraph(dbdir)
+	defer gdb.Close()
 
 	vid1 := []byte("thisisvertex1")
 	vid2 := []byte("thisisvertex2")
@@ -252,16 +235,14 @@ func TestAddEdge(t *testing.T) {
 	edge2, errb := gdb.AddEdge(eid1, vertex1, vertex2, "edgeforward")
 	assert.True(t, edge2 == nil)
 	assert.Equal(t, KeyExists, errb )
-
-	gdb.Close()
 }
 
 func TestGetEdge(t *testing.T) {
 	//t.Skip()
-
 	cleanup(dbdir)
 	defer cleanup(dbdir)
 	gdb,_ := opengraph(dbdir)
+	defer gdb.Close()
 
 	vid1 := []byte("thisisvertex1")
 	vid2 := []byte("thisisvertex2")
@@ -281,15 +262,14 @@ func TestGetEdge(t *testing.T) {
 	assert.Equal(t, vertex1, edge1.VertexOut())
 	assert.Equal(t, vertex2, edge1.VertexIn())
 	assert.Equal(t, "edgeforward", edge1.Label())
-	gdb.Close()
 }
 
 func TestDelEdge(t *testing.T) {
 	//t.Skip()
-
 	cleanup(dbdir)
 	defer cleanup(dbdir)
 	gdb,_ := opengraph(dbdir)
+	defer gdb.Close()
 
 	vid1 := []byte("thisisvertex1")
 	vid2 := []byte("thisisvertex2")
@@ -317,17 +297,15 @@ func TestDelEdge(t *testing.T) {
 	assert.True(t, gdb.Edge(eid1) == nil)
 	err = gdb.DelEdge(edge1)
 	assert.Equal(t, KeyDoesNotExist, err)
-
-	gdb.Close()
 }
 
 
 func TestEdges(t *testing.T) {
 	//t.Skip()
-
 	cleanup(dbdir)
 	defer cleanup(dbdir)
 	gdb,_ := opengraph(dbdir)
+	defer gdb.Close()
 
 	vid1 := []byte("thisisvertex1")
 	vid2 := []byte("thisisvertex2")
@@ -353,5 +331,4 @@ func TestEdges(t *testing.T) {
 	//keys are lexicaly ordered.. lastedge should be the last in the list
 	testedges = gdb.Edges()
 	assert.Equal(t, lastedge, testedges[len(testedges) - 1])
-	gdb.Close()
 }
