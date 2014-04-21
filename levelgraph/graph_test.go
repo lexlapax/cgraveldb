@@ -12,15 +12,14 @@ import (
 )
 
 func TestOpenGraph(t *testing.T){
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-
-	gdb, dberr := opengraph(dbdir)
+	//t.Skip()
+	gdb, dberr := OpenGraph(dbdir)
 	if dberr != nil { t.Fatal(dberr) }
 
 	if gdb == nil {
 		t.Error("graphdb should not be nil")
-	} else { 
+	} else {
+		gdb.Clear() 
 		if dbdir != gdb.dbdir { t.Error("dbdir not equal")}
 		if reflect.TypeOf(gdb.meta).String() != "*levigo.DB" { t.Error("gdb not valid type")}
 		if gdb.meta == nil { t.Error("meta is nil") }
@@ -42,9 +41,8 @@ func TestOpenGraph(t *testing.T){
 
 func TestAddVertex(t *testing.T) {
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 	defer gdb.Close()
 
 	id := []byte("somerandomstringid")
@@ -67,17 +65,16 @@ func TestAddVertex(t *testing.T) {
 
 func TestCloseAndOpen(t *testing.T) {
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb, dberr := opengraph(dbdir)
+	gdb, dberr := OpenGraph(dbdir)
 
 	if dberr != nil { t.Fatal(dberr) }
+	gdb.Clear()
 	if gdb.EdgeCount() != 0 { t.Error("should have 0 edges")}
 	if gdb.VertexCount() != 0 { t.Error("should have 0 vertices")}
 	gdb.AddVertex([]byte("somerandomstringid"))
 	if gdb.VertexCount() != 1 { t.Error("should have 1 vertex")}
 	gdb.Close()
-	gdb, dberr = opengraph(dbdir)
+	gdb, dberr = OpenGraph(dbdir)
 	if gdb.VertexCount() != 1 { t.Error("should have 1 vertex")}
 	gdb.Close()
 }
@@ -85,9 +82,8 @@ func TestCloseAndOpen(t *testing.T) {
 
 func TestGetVertex(t *testing.T) {
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 	defer gdb.Close()
 
 	ida := []byte("somerandomstringid")
@@ -103,9 +99,8 @@ func TestGetVertex(t *testing.T) {
 
 func TestDelVertex(t *testing.T) {
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 	defer gdb.Close()
 
 	ida := []byte("somerandomstringid")
@@ -132,9 +127,8 @@ func TestDelVertex(t *testing.T) {
 
 func TestVertexCount(t *testing.T) {
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 	defer gdb.Close()
 
 	assert.Equal(t, uint64(0), gdb.VertexCount())
@@ -167,9 +161,8 @@ func TestVertexCount(t *testing.T) {
 
 func TestVertices(t *testing.T) {
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 	defer gdb.Close()
 
 	ida := []byte("somerandomstringid")
@@ -196,9 +189,8 @@ func TestVertices(t *testing.T) {
 
 func TestAddEdge(t *testing.T) {
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 	defer gdb.Close()
 
 	vid1 := []byte("thisisvertex1")
@@ -239,9 +231,8 @@ func TestAddEdge(t *testing.T) {
 
 func TestGetEdge(t *testing.T) {
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 	defer gdb.Close()
 
 	vid1 := []byte("thisisvertex1")
@@ -266,9 +257,8 @@ func TestGetEdge(t *testing.T) {
 
 func TestDelEdge(t *testing.T) {
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 	defer gdb.Close()
 
 	vid1 := []byte("thisisvertex1")
@@ -302,9 +292,8 @@ func TestDelEdge(t *testing.T) {
 
 func TestEdges(t *testing.T) {
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 	defer gdb.Close()
 
 	vid1 := []byte("thisisvertex1")
@@ -336,9 +325,8 @@ func TestEdges(t *testing.T) {
 
 func TestEdgeCount(t *testing.T) {
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 	defer gdb.Close()
 
 	assert.Equal(t, uint64(0), gdb.EdgeCount())

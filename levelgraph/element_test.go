@@ -12,9 +12,8 @@ import (
 
 func TestElementProperty(t *testing.T){
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 
 	vid1 := []byte("vertex1")
 	vid2 := []byte("vertex2")
@@ -66,7 +65,7 @@ func TestElementProperty(t *testing.T){
 
 	gdb.Close()
 
-	gdb,_ = opengraph(dbdir)
+	gdb,_ = OpenGraph(dbdir)
 	vertex1 = gdb.Vertex(vid1)
 	vertex2 = gdb.Vertex(vid2)
 	edge1 = gdb.Edge(eid1)

@@ -19,6 +19,7 @@ var (
 	KeyExists = errors.New("key exists in database")
 	KeyDoesNotExist = errors.New("key does not exist in database")
 	InvalidParameterValue = errors.New("the value of parameter passed is invalid")
+	DBNotOpen = errors.New("db is not open")
 	metadb = "meta.db"	
 	elementdb = "element.db"
 	edgedb = "edge.db"	
@@ -67,72 +68,115 @@ type DBGraph struct {
 	ro *levigo.ReadOptions
 	wo *levigo.WriteOptions
 	recsep []byte
+	IsOpen bool
 }
 
-func opengraph(dbdir string) (*DBGraph, error) {
-	if dbdir == "" {
-		return nil, NoDirectory
+func openMeta(dbdir string, ro *levigo.ReadOptions, wo *levigo.WriteOptions, opts *levigo.Options) (*levigo.DB, []byte, error) {
+	meta, err := levigo.Open(path.Join(dbdir, metadb), opts)
+	if err != nil {return nil, nil, err}
+	recsepbytes, _ := meta.Get(ro, []byte(propRecSep))
+	if recsepbytes == nil {
+		recsepbytes = []byte(recsep)
+		err = meta.Put(wo, []byte(propRecSep), recsepbytes) 
+		if err != nil {return nil, nil, err}
 	}
-	err := os.MkdirAll(dbdir, 0755)
-	if err != nil {
-		return nil, err
-	}
-	db := new(DBGraph)
-	db.dbdir = dbdir
-	db.recsep = []byte(recsep)
+	return meta, recsepbytes, nil
+}
 
-	opts := levigo.NewOptions()
-	opts.SetCache(levigo.NewLRUCache(3<<30))
-	opts.SetCreateIfMissing(true)
+func openElements(dbdir string, opts *levigo.Options) (*levigo.DB, error) {
+	return levigo.Open(path.Join(dbdir, elementdb), opts)
+}
+
+func openEdges(dbdir string, opts *levigo.Options) (*levigo.DB, error) {
+	return levigo.Open(path.Join(dbdir, edgedb), opts)
+}
+
+func openHexaIndex(dbdir string, opts *levigo.Options) (*levigo.DB, error) {
+	return levigo.Open(path.Join(dbdir, hexaindexdb), opts)
+}
+
+func openProps(dbdir string, opts *levigo.Options) (*levigo.DB, error) {
+	return levigo.Open(path.Join(dbdir, propdb), opts)
+}
+
+func (db *DBGraph) Open() (error) {
+	if db.IsOpen == true {return errors.New("db already open") }
+	err := os.MkdirAll(db.dbdir, 0755)
+	if err != nil { return err }
+
+	//db.recsep = []byte(recsep)
+
+	db.opts = levigo.NewOptions()
+	cache := levigo.NewLRUCache(3<<30)
+	db.opts.SetCache(cache)
+	db.opts.SetCreateIfMissing(true)
 	filter := levigo.NewBloomFilter(10)
-	opts.SetFilterPolicy(filter)
+	db.opts.SetFilterPolicy(filter)
 
 	db.ro = levigo.NewReadOptions()
 	db.wo = levigo.NewWriteOptions()
 
-	meta, err := levigo.Open(path.Join(dbdir, metadb), opts)
-	if err != nil {return nil, err}
-	db.meta = meta
-	recsepbytes, _ := db.getDbProperty(propRecSep)
-	if recsepbytes == nil {
-		recsepbytes = []byte(recsep)
-		_,err = db.putDbProperty(propRecSep,recsepbytes)
-		if err != nil {return nil, err}
-	}
-	db.recsep = recsepbytes
 
-	elements, err := levigo.Open(path.Join(dbdir, elementdb), opts)
-	if err != nil {return nil, err}
-	db.elements = elements
+	db.meta, db.recsep, err = openMeta(dbdir, db.ro, db.wo, db.opts)
+	if err != nil {return err}
 
-	edges, err :=  levigo.Open(path.Join(dbdir, edgedb), opts)
-	if err != nil {return nil, err}
-	db.edges = edges
-	
-	hexaindex, err := levigo.Open(path.Join(dbdir, hexaindexdb), opts)
-	if err != nil {return nil, err}
-	db.hexaindex = hexaindex
-	
-	props, err := levigo.Open(path.Join(dbdir, propdb), opts)
-	if err != nil {return nil, err}
-	db.props = props
-	
+	db.elements, err = openElements(dbdir, db.opts)
+	if err != nil {return err}
+
+	db.edges, err = openEdges(dbdir, db.opts)
+	if err != nil {return err}
+
+	db.hexaindex, err = openHexaIndex(dbdir, db.opts)
+	if err != nil {return err}
+
+	db.props, err = openProps(dbdir, db.opts)
+	if err != nil {return err}
+
 	db.keepcount(VertexType, 0)
 	db.keepcount(EdgeType, 0)
+	db.IsOpen = true
+	return nil
+}
 
+
+func OpenGraph(dbdir string) (*DBGraph, error ) {
+	if dbdir == "" { return nil, NoDirectory }
+
+	db := new(DBGraph)
+	db.dbdir = dbdir
+	db.IsOpen = false
+
+	err := db.Open()
+	if err != nil {return nil, err }
 	return db, nil
 }
 
-func OpenGraph(dbdir string) (*DBGraph, error ) {
-	return opengraph(dbdir)
+func (db *DBGraph) Clear() (error) {
+	dbdir := db.dbdir
+	db.Close()
+	os.RemoveAll(dbdir)
+	return db.Open()
 }
 
+
 func (db *DBGraph) Close() (bool, error) {
+	db.IsOpen = false
 	db.meta.Close()
 	db.elements.Close()
 	db.edges.Close()
 	db.hexaindex.Close()
 	db.props.Close()
+	db.opts.Close()
+	db.ro.Close()
+	db.wo.Close()
+	db.meta = nil
+	db.elements = nil
+	db.edges = nil
+	db.hexaindex = nil
+	db.props = nil
+	db.opts = nil
+	db.ro = nil
+	db.wo = nil
 	return true, nil
 }
 
@@ -157,7 +201,6 @@ func(db *DBGraph) putDbProperty(prop string, val []byte) ([]byte, error){
 	if err2 != nil {return nil, err}
 	return oldval, nil
 }
-
 
 func (db *DBGraph) keepcount(etype ElementType, upordown int) (uint64) {
 	var storedcount, returncount uint64
@@ -230,11 +273,16 @@ func (db *DBGraph) DelVertex(vertex *DBVertex) error {
 	val,err := db.elements.Get(db.ro, id)
 	if err != nil {return err}
 	if val == nil {return KeyDoesNotExist}
-	err = db.elements.Delete(db.wo, id)
-	if err != nil {return err}
-	
-	db.keepcount(VertexType, -1)
-	
+
+	// delete all hexastore data
+	for _, edge := range db.vertexEdges(0, vertex) {
+		db.DelEdge(edge)
+	}
+
+	for _, edge := range db.vertexEdges(1, vertex) {
+		db.DelEdge(edge)
+	}
+
 	// delete all properties data 
 	ro := levigo.NewReadOptions()
 	ro.SetFillCache(false)
@@ -255,14 +303,12 @@ func (db *DBGraph) DelVertex(vertex *DBVertex) error {
 	err = db.props.Write(db.wo, wb)
 	if err != nil {return err}
 
-	// delete all hexastore data
-	for _, edge := range db.vertexEdges(0, vertex) {
-		db.DelEdge(edge)
-	}
-
-	for _, edge := range db.vertexEdges(1, vertex) {
-		db.DelEdge(edge)
-	}
+	// now delete the vertex
+	err = db.elements.Delete(db.wo, id)
+	if err != nil {return err}
+	
+	db.keepcount(VertexType, -1)
+	
 
 	return nil
 }
@@ -306,10 +352,11 @@ func (db *DBGraph) vertexEdges(outorin int, vertex *DBVertex) ([]*DBEdge) {
 	defer ro.Close()
 	it.Seek(prefix)
 
-	//var err error
-	//var vouid, vinid, eid []byte
+
 	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+		//hxrec := it.Key()
 		_, _, eid, _ := idsFromHexaKey(db.recsep, it.Key())
+		//fmt.Printf("v=%v, eid=%v\n", string(vertex.Id()[:]),string(hxrec[:]))
 		edges = append(edges, db.Edge(eid))
 	}
 
@@ -462,18 +509,30 @@ func (db *DBGraph) DelEdge(edge *DBEdge) error {
 	val,err := db.elements.Get(db.ro, id)
 	if err != nil {return err}
 	if val == nil {return KeyDoesNotExist}
-	err = db.elements.Delete(db.wo, id)
+
+
+	//  delete all hexastore data
+	// //todo - add hexascale index
+	//hexaindex key 
+	hi, _ := newHexaIndexKey(db.recsep, edge.VertexOut().id, edge.VertexIn().id, id)
+	wb2 := levigo.NewWriteBatch()
+	defer wb2.Close()
+	wb2.Delete(hi.spo)
+	wb2.Delete(hi.sop)
+	wb2.Delete(hi.ops)
+	wb2.Delete(hi.osp)
+	wb2.Delete(hi.pso)
+	wb2.Delete(hi.pos)
+
+	err = db.hexaindex.Write(db.wo, wb2)
 	if err != nil {return err}
-	
-	err = db.edges.Delete(db.wo, id)
-	db.keepcount(EdgeType, -1)
-	
+
 	// delete all properties data 
 	ro := levigo.NewReadOptions()
 	ro.SetFillCache(false)
 	it := db.props.NewIterator(ro)
-	defer it.Close()
 	defer ro.Close()
+	defer it.Close()
 	prefix := append(id, db.recsep...)
 	it.Seek(prefix)
 	propkeys := [][]byte{}
@@ -488,21 +547,14 @@ func (db *DBGraph) DelEdge(edge *DBEdge) error {
 	err = db.props.Write(db.wo, wb)
 	if err != nil {return err}
 
-	// todo - delete all hexastore data
-	// //todo - add hexascale index
-	hi, _ := newHexaIndexKey(db.recsep, edge.subject.id, edge.object.id, edge.id)
-
-	wb2 := levigo.NewWriteBatch()
-	defer wb2.Close()
-	wb2.Delete(hi.spo)
-	wb2.Delete(hi.sop)
-	wb2.Delete(hi.ops)
-	wb2.Delete(hi.osp)
-	wb2.Delete(hi.pso)
-	wb2.Delete(hi.pos)
-
-	err = db.hexaindex.Write(db.wo, wb2)
+	// now delete the edge
+	err = db.elements.Delete(db.wo, id)
 	if err != nil {return err}
+	
+	err = db.edges.Delete(db.wo, id)
+	db.keepcount(EdgeType, -1)
+	
+
 	return nil
 }
 
@@ -510,10 +562,10 @@ func (db *DBGraph) Edges() []*DBEdge {
 	edges := []*DBEdge{}
 	var edge *DBEdge
 	ro := levigo.NewReadOptions()
+	defer ro.Close()
 	ro.SetFillCache(false)
 	it := db.edges.NewIterator(ro)
 	defer it.Close()
-	defer ro.Close()
 	it.SeekToFirst()
 	var label string
 	var outvertex, invertex *DBVertex

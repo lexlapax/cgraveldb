@@ -13,9 +13,8 @@ import (
 
 func TestEdge(t *testing.T){
 	//t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 	defer gdb.Close()
 
 	vid1 := []byte("vertex1")

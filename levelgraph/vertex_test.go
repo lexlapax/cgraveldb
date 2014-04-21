@@ -3,18 +3,17 @@ package levelgraph
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
+	//"fmt"
 	//"os"
 	//"reflect"
 	//"github.com/jmhodges/levigo"
-	//"fmt"
 	//"github.com/lexlapax/graveldb/core"	
 )
 
 func TestVertex(t *testing.T){
-	t.Skip()
-	cleanup(dbdir)
-	defer cleanup(dbdir)
-	gdb,_ := opengraph(dbdir)
+	//t.Skip()
+	gdb,_ := OpenGraph(dbdir)
+	gdb.Clear()
 
 	vid1 := []byte("vertex1")
 	vid2 := []byte("vertex2")
@@ -39,16 +38,15 @@ func TestVertex(t *testing.T){
 	*/
 
 
-	assert.True(t, vertex1.OutEdges() == nil)
-	assert.True(t, vertex2.OutEdges() == nil)
-	assert.True(t, vertex3.OutEdges() == nil)
-	assert.True(t, vertex4.OutEdges() == nil)
-	assert.True(t, vertex1.InEdges() == nil)
-	assert.True(t, vertex2.InEdges() == nil)
-	assert.True(t, vertex3.InEdges() == nil)
-	assert.True(t, vertex4.InEdges() == nil)
+	assert.True(t, len(vertex1.OutEdges()) == 0)
+	assert.True(t, len(vertex2.OutEdges()) == 0)
+	assert.True(t, len(vertex3.OutEdges()) == 0)
+	assert.True(t, len(vertex4.OutEdges()) == 0)
+	assert.True(t, len(vertex1.InEdges()) == 0)
+	assert.True(t, len(vertex2.InEdges()) == 0)
+	assert.True(t, len(vertex3.InEdges()) == 0)
+	assert.True(t, len(vertex4.InEdges()) == 0)
 
-	
 	eid1 := []byte("edge1")
 	eid2 := []byte("edge2")
 	eid3 := []byte("edge3")
@@ -77,7 +75,7 @@ func TestVertex(t *testing.T){
 	assert.True(t, 1 == len(v2out))
 	assert.True(t, 1 == len(v2in))
 	assert.True(t, 1 == len(v3out))
-	assert.True(t, 2 == len(v3in))
+	assert.True(t, 1 == len(v3in))
 	assert.True(t, 1 == len(v4out))
 	assert.True(t, 2 == len(v4in))
 
@@ -95,37 +93,51 @@ func TestVertex(t *testing.T){
 	assert.Equal(t, edge3, v4in[0])
 	assert.Equal(t, edge4, v4in[1])
 
-	gdb.DelVertex(vertex4)
-	assert.True(t, len(gdb.Edges()) == 2)
-	assert.True(t, len(vertex1.OutEdges()) == 2)
-	assert.True(t, vertex2.OutEdges() == nil)
-	assert.True(t, vertex3.OutEdges() == nil)
-	assert.True(t, vertex1.InEdges() == nil)
+	err := gdb.DelEdge(edge2)
+	assert.True(t, err == nil)
+	assert.True(t, gdb.Edge(eid2) == nil)
+
+	assert.True(t, len(gdb.Edges()) == 4)
+	//fmt.Printf("v1out=%v\n", vertex1.OutEdges())
+	assert.True(t, len(vertex1.OutEdges()) == 1)
+	assert.True(t, len(vertex2.OutEdges()) == 1)
+	assert.True(t, len(vertex3.OutEdges()) == 1)
+	assert.True(t, len(vertex4.OutEdges()) == 1)
+	assert.True(t, len(vertex1.InEdges()) == 1)
 	assert.True(t, len(vertex2.InEdges()) == 1)
-	assert.True(t, len(vertex3.InEdges()) == 1)
+	assert.True(t, len(vertex3.InEdges()) == 0)
+	assert.True(t, len(vertex4.InEdges()) == 2)
+
+
+	gdb.DelVertex(vertex4)
+	assert.True(t, len(gdb.Edges()) == 1)
+	assert.True(t, len(vertex1.OutEdges()) == 1)
+	assert.True(t, len(vertex2.OutEdges()) == 0)
+	assert.True(t, len(vertex3.OutEdges()) == 0)
+	assert.True(t, len(vertex1.InEdges()) == 0)
+	assert.True(t, len(vertex2.InEdges()) == 1)
+	assert.True(t, len(vertex3.InEdges()) == 0)
+
 	gdb.Close()	
 
-	gdb,_ = opengraph(dbdir)
+	gdb,_ = OpenGraph(dbdir)
+	assert.True(t, len(gdb.Edges()) == 1)
+	assert.True(t, len(gdb.Vertices()) == 3)
+
 	vertex1 = gdb.Vertex(vid1)
-	vertex1 = gdb.Vertex(vid1)
-	vertex1 = gdb.Vertex(vid1)
+	vertex2 = gdb.Vertex(vid2)
+	vertex3 = gdb.Vertex(vid3)
 	edge1 = gdb.Edge(eid1)
 	edge2 = gdb.Edge(eid2)
-	assert.True(t, len(gdb.Edges()) == 2)
-	assert.True(t, len(vertex1.OutEdges()) == 2)
-	assert.True(t, vertex2.OutEdges() == nil)
-	assert.True(t, vertex3.OutEdges() == nil)
-	assert.True(t, vertex1.InEdges() == nil)
-	assert.True(t, len(vertex2.InEdges()) == 1)
-	assert.True(t, len(vertex3.InEdges()) == 1)
-	assert.Equal(t, "1 to 2", edge1.Label())
-	assert.Equal(t, "1 to 3", edge2.Label())
-
-	gdb.DelEdge(edge2)
-	assert.True(t, len(gdb.Edges()) == 1)
-	assert.True(t, vertex3.InEdges() == nil)
 	assert.True(t, len(vertex1.OutEdges()) == 1)
+	assert.True(t, len(vertex2.OutEdges()) == 0)
+	assert.True(t, len(vertex3.OutEdges()) == 0)
+	assert.True(t, len(vertex1.InEdges()) == 0)
 	assert.True(t, len(vertex2.InEdges()) == 1)
+	assert.True(t, len(vertex3.InEdges()) == 0)
+	assert.Equal(t, "1 to 2", edge1.Label())
+	assert.True(t, edge2 == nil)
+
 	assert.Equal(t, edge1, vertex1.OutEdges()[0])
 	assert.Equal(t, edge1, vertex2.InEdges()[0])
 
