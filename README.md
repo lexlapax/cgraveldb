@@ -1,13 +1,14 @@
 #graveldb
+persistent (on disk) graph database library for embedded use
 
 ## intro
 just dabbling around with creating an embedded persistent graph database in go.
 
-this is an exercise in learning go for me.. 
+This is an exercise in learning go for me. I intend to use it as a generic backing store for other applications like note taking etc..
 
 uses leveldb as a backing store
 
-it sort of works right now..
+it sort of works right now.
 it's a very basic property graph.. 
 there are no optimizations for queries yet 
 there is no write collision prevention, yet, so do writes serially (addvertex, addedge, deletevertex, deleteedge)
