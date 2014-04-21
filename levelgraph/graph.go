@@ -371,3 +371,51 @@ func (db *DBGraph) VertexCount() uint64 {
 	return db.keepcount(VertexType, 0)
 }
 
+func (db *DBGraph) getPropKey(id []byte, prop string) ([]byte) {
+	keyvalues := [][]byte{}
+	keyvalues = append(keyvalues,id, []byte(prop))
+	key := bytes.Join(keyvalues, db.recsep)
+	return key
+}
+
+func (db *DBGraph) ElementProperty(element *DBElement, prop string) ([]byte) {
+	if prop == "" || element == nil || element.id == nil { return nil }
+	key := db.getPropKey(element.id, prop)
+	val, err := db.props.Get(db.ro, key)
+	if err != nil {return nil}
+	return val
+}
+
+func (db *DBGraph) ElementSetProperty(element *DBElement, prop string, value []byte) (error){
+	if prop == "" || element == nil || element.id == nil { return nil }
+	key := db.getPropKey(element.id, prop)
+	err := db.props.Put(db.wo, key, value)
+	return err
+}
+
+func (db *DBGraph) ElementDelProperty(element *DBElement, prop string) ([]byte) {
+	if prop == "" || element == nil || element.id == nil { return nil }
+	key := db.getPropKey(element.id, prop)
+	val, err := db.props.Get(db.ro, key)
+	if err != nil {return nil}
+	err = db.props.Delete(db.wo, key)
+	if err != nil {return nil}
+	return val
+}
+
+func (db *DBGraph) ElementPropertyKeys(element *DBElement) ([]string) {
+	propkeys := []string{}
+	ro := levigo.NewReadOptions()
+	ro.SetFillCache(false)
+	it := db.props.NewIterator(ro)
+	defer it.Close()
+	defer ro.Close()
+	prefix := append(element.id, db.recsep...)
+	it.Seek(prefix)
+	var prop []byte
+	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+		prop = bytes.Split(it.Key(), db.recsep)[1]
+		propkeys = append(propkeys, string(prop[:]))
+	}
+	return propkeys
+}
