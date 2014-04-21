@@ -1,12 +1,24 @@
+#graveldb
+
+## intro
 just dabbling around with creating an embedded persistent graph database in go.
 
 this is an exercise in learning go for me.. 
 
 uses leveldb as a backing store
 
-nothing works right now..
+it sort of works right now..
+it's a very basic property graph.. 
+there are no optimizations for queries yet 
+
+just follow the graph_test.go - open a graph, add/delete vertices, add/delete edges, and query using edge following, e.g vertex.OutEdges() /vertex.InEdges() and edge.OutVertex(), edge.InVertex().. 
+
+you can also manually check for interesting edges using edge.labels
+or interesting vertices and edges using properties.
 
 
+
+## concept
 the structure (and interfaces) of the graph database tries to follow most of the blueprint graph api..
 
 
@@ -31,7 +43,12 @@ A property graph has these elements:
   1. each edge has a collection of properties defined by a map from key to value.
 
 
+## implementation
+
 the graph will be persisted in databases / tables on disk. These are the database descriptions
+
+the edges are indexed in a hexastore derived index implementation
+
 
 1. element 
   1. key=element id
@@ -51,6 +68,9 @@ the graph will be persisted in databases / tables on disk. These are the databas
     * C is element id for edge connecting the vertii or predicate
   1. value = label 
 
+1. edges - mostly for quick rehydration -- will be removed later
+  1. key = edge (element id)
+  1. value = subject (outvertex), object (invertex), label
 1. property 
   1. key = elemenid::property
   1. value = value
