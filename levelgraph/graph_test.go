@@ -11,7 +11,7 @@ import (
 	//"github.com/lexlapax/graveldb/core"	
 )
 
-func TestOpenGraph(t *testing.T){
+func TestGraphOpenGraph(t *testing.T){
 	//t.Skip()
 	gdb, dberr := OpenGraph(dbdir)
 	if dberr != nil { t.Fatal(dberr) }
@@ -39,7 +39,7 @@ func TestOpenGraph(t *testing.T){
 	}
 }
 
-func TestAddVertex(t *testing.T) {
+func TestGraphVertexAdd(t *testing.T) {
 	//t.Skip()
 	gdb,_ := OpenGraph(dbdir)
 	gdb.Clear()
@@ -63,7 +63,7 @@ func TestAddVertex(t *testing.T) {
 }
 
 
-func TestCloseAndOpen(t *testing.T) {
+func TestGraphCloseAndOpen(t *testing.T) {
 	//t.Skip()
 	gdb, dberr := OpenGraph(dbdir)
 
@@ -80,7 +80,7 @@ func TestCloseAndOpen(t *testing.T) {
 }
 
 
-func TestGetVertex(t *testing.T) {
+func TestGraphVertexGet(t *testing.T) {
 	//t.Skip()
 	gdb,_ := OpenGraph(dbdir)
 	gdb.Clear()
@@ -97,7 +97,7 @@ func TestGetVertex(t *testing.T) {
 	assert.Equal(t, vertexc, vertexd)
 }
 
-func TestDelVertex(t *testing.T) {
+func TestGraphVertexDel(t *testing.T) {
 	//t.Skip()
 	gdb,_ := OpenGraph(dbdir)
 	gdb.Clear()
@@ -125,7 +125,7 @@ func TestDelVertex(t *testing.T) {
 	assert.Equal(t, KeyDoesNotExist, err)
 }
 
-func TestVertexCount(t *testing.T) {
+func TestGraphVertexCount(t *testing.T) {
 	//t.Skip()
 	gdb,_ := OpenGraph(dbdir)
 	gdb.Clear()
@@ -159,7 +159,7 @@ func TestVertexCount(t *testing.T) {
 }
 
 
-func TestVertices(t *testing.T) {
+func TestGraphVertexGetAll(t *testing.T) {
 	//t.Skip()
 	gdb,_ := OpenGraph(dbdir)
 	gdb.Clear()
@@ -187,7 +187,7 @@ func TestVertices(t *testing.T) {
 	assert.Equal(t, lastvertex, testvertii[len(testvertii) - 1])
 }
 
-func TestAddEdge(t *testing.T) {
+func TestGraphEdgeAdd(t *testing.T) {
 	//t.Skip()
 	gdb,_ := OpenGraph(dbdir)
 	gdb.Clear()
@@ -229,7 +229,7 @@ func TestAddEdge(t *testing.T) {
 	assert.Equal(t, KeyExists, errb )
 }
 
-func TestGetEdge(t *testing.T) {
+func TestGraphEdgeGet(t *testing.T) {
 	//t.Skip()
 	gdb,_ := OpenGraph(dbdir)
 	gdb.Clear()
@@ -255,7 +255,7 @@ func TestGetEdge(t *testing.T) {
 	assert.Equal(t, "edgeforward", edge1.Label())
 }
 
-func TestDelEdge(t *testing.T) {
+func TestGraphEdgeDel(t *testing.T) {
 	//t.Skip()
 	gdb,_ := OpenGraph(dbdir)
 	gdb.Clear()
@@ -290,7 +290,7 @@ func TestDelEdge(t *testing.T) {
 }
 
 
-func TestEdges(t *testing.T) {
+func TestGraphEdgeGetAll(t *testing.T) {
 	//t.Skip()
 	gdb,_ := OpenGraph(dbdir)
 	gdb.Clear()
@@ -323,7 +323,7 @@ func TestEdges(t *testing.T) {
 }
 
 
-func TestEdgeCount(t *testing.T) {
+func TestGraphEdgeCount(t *testing.T) {
 	//t.Skip()
 	gdb,_ := OpenGraph(dbdir)
 	gdb.Clear()

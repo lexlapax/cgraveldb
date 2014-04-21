@@ -6,6 +6,7 @@ import (
 		"fmt"
 		"errors"
 		"os"
+		"sync"
 		"encoding/binary"
 		"github.com/jmhodges/levigo"
 		"path"
@@ -69,6 +70,7 @@ type DBGraph struct {
 	wo *levigo.WriteOptions
 	recsep []byte
 	IsOpen bool
+	rwlock *sync.RWMutex
 }
 
 func openMeta(dbdir string, ro *levigo.ReadOptions, wo *levigo.WriteOptions, opts *levigo.Options) (*levigo.DB, []byte, error) {
@@ -105,6 +107,9 @@ func (db *DBGraph) Open() (error) {
 	if err != nil { return err }
 
 	//db.recsep = []byte(recsep)
+	db.rwlock = &sync.RWMutex{}
+	db.rwlock.Lock()
+	defer db.rwlock.Unlock()
 
 	db.opts = levigo.NewOptions()
 	cache := levigo.NewLRUCache(3<<30)
@@ -117,19 +122,19 @@ func (db *DBGraph) Open() (error) {
 	db.wo = levigo.NewWriteOptions()
 
 
-	db.meta, db.recsep, err = openMeta(dbdir, db.ro, db.wo, db.opts)
+	db.meta, db.recsep, err = openMeta(db.dbdir, db.ro, db.wo, db.opts)
 	if err != nil {return err}
 
-	db.elements, err = openElements(dbdir, db.opts)
+	db.elements, err = openElements(db.dbdir, db.opts)
 	if err != nil {return err}
 
-	db.edges, err = openEdges(dbdir, db.opts)
+	db.edges, err = openEdges(db.dbdir, db.opts)
 	if err != nil {return err}
 
-	db.hexaindex, err = openHexaIndex(dbdir, db.opts)
+	db.hexaindex, err = openHexaIndex(db.dbdir, db.opts)
 	if err != nil {return err}
 
-	db.props, err = openProps(dbdir, db.opts)
+	db.props, err = openProps(db.dbdir, db.opts)
 	if err != nil {return err}
 
 	db.keepcount(VertexType, 0)
@@ -160,6 +165,8 @@ func (db *DBGraph) Clear() (error) {
 
 
 func (db *DBGraph) Close() (bool, error) {
+	db.rwlock.Lock()
+	defer db.rwlock.Unlock()
 	db.IsOpen = false
 	db.meta.Close()
 	db.elements.Close()
@@ -237,6 +244,8 @@ func (db *DBGraph) keepcount(etype ElementType, upordown int) (uint64) {
 }
 
 func (db *DBGraph) AddVertex(id []byte) (*DBVertex, error) {
+	db.rwlock.Lock()
+	defer db.rwlock.Unlock()
 	if id == nil {return nil, NilValue}
 	val, err := db.elements.Get(db.ro, id)
 	if val != nil {
@@ -266,6 +275,12 @@ func (db *DBGraph) Vertex(id []byte) *DBVertex {
 }
 
 func (db *DBGraph) DelVertex(vertex *DBVertex) error {
+	db.rwlock.Lock()
+	defer db.rwlock.Unlock()
+	return db.delVertex(vertex)
+}
+
+func (db *DBGraph) delVertex(vertex *DBVertex) error {
 	if vertex == nil {	return NilValue }
 	if vertex.DBElement == nil { return NilValue }
 	id := vertex.Id()
@@ -276,11 +291,11 @@ func (db *DBGraph) DelVertex(vertex *DBVertex) error {
 
 	// delete all hexastore data
 	for _, edge := range db.vertexEdges(0, vertex) {
-		db.DelEdge(edge)
+		db.delEdge(edge)
 	}
 
 	for _, edge := range db.vertexEdges(1, vertex) {
-		db.DelEdge(edge)
+		db.delEdge(edge)
 	}
 
 	// delete all properties data 
@@ -308,7 +323,6 @@ func (db *DBGraph) DelVertex(vertex *DBVertex) error {
 	if err != nil {return err}
 	
 	db.keepcount(VertexType, -1)
-	
 
 	return nil
 }
@@ -426,6 +440,8 @@ func newHexaIndexKey(sep []byte, subject []byte, object []byte, predicate []byte
 
 
 func (db *DBGraph) AddEdge(id []byte, outvertex *DBVertex, invertex *DBVertex, label string) (*DBEdge, error) {
+	db.rwlock.Lock()
+	defer db.rwlock.Unlock()
 	if (id == nil) {return nil, NilValue}
 	if (outvertex == nil) {return nil, NilValue}
 	if (invertex == nil) {return nil, NilValue}
@@ -502,6 +518,12 @@ func (db *DBGraph) Edge(id []byte) *DBEdge {
 }
 
 func (db *DBGraph) DelEdge(edge *DBEdge) error {
+	db.rwlock.Lock()
+	defer db.rwlock.Unlock()
+	return db.delEdge(edge) 
+}
+
+func (db *DBGraph) delEdge(edge *DBEdge) error {
 	if edge == nil {	return NilValue }
 	if edge.DBElement == nil { return NilValue }
 	id := edge.Id()
@@ -602,6 +624,8 @@ func (db *DBGraph) ElementProperty(element *DBElement, prop string) ([]byte) {
 }
 
 func (db *DBGraph) ElementSetProperty(element *DBElement, prop string, value []byte) (error){
+	db.rwlock.Lock()
+	defer db.rwlock.Unlock()
 	if prop == "" || element == nil || element.id == nil { return nil }
 	key := db.getPropKey(element.id, prop)
 	err := db.props.Put(db.wo, key, value)
@@ -609,6 +633,8 @@ func (db *DBGraph) ElementSetProperty(element *DBElement, prop string, value []b
 }
 
 func (db *DBGraph) ElementDelProperty(element *DBElement, prop string) ([]byte) {
+	db.rwlock.Lock()
+	defer db.rwlock.Unlock()
 	if prop == "" || element == nil || element.id == nil { return nil }
 	key := db.getPropKey(element.id, prop)
 	val, err := db.props.Get(db.ro, key)
