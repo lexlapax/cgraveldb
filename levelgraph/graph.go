@@ -23,7 +23,6 @@ var (
 	DBNotOpen = errors.New("db is not open")
 	metadb = "meta.db"	
 	elementdb = "element.db"
-	edgedb = "edge.db"	
 	hexaindexdb = "hexaindex.db"
 	propdb = "prop.db"
 	recsep = "\x1f" //the ascii unit separator dec val 31
@@ -61,7 +60,6 @@ type HexaIndexKeys struct {
 type DBGraph struct {
 	meta *levigo.DB
 	elements *levigo.DB
-	edges *levigo.DB
 	hexaindex *levigo.DB
 	props *levigo.DB
 	dbdir string
@@ -87,10 +85,6 @@ func openMeta(dbdir string, ro *levigo.ReadOptions, wo *levigo.WriteOptions, opt
 
 func openElements(dbdir string, opts *levigo.Options) (*levigo.DB, error) {
 	return levigo.Open(path.Join(dbdir, elementdb), opts)
-}
-
-func openEdges(dbdir string, opts *levigo.Options) (*levigo.DB, error) {
-	return levigo.Open(path.Join(dbdir, edgedb), opts)
 }
 
 func openHexaIndex(dbdir string, opts *levigo.Options) (*levigo.DB, error) {
@@ -128,8 +122,6 @@ func (db *DBGraph) Open() (error) {
 	db.elements, err = openElements(db.dbdir, db.opts)
 	if err != nil {return err}
 
-	db.edges, err = openEdges(db.dbdir, db.opts)
-	if err != nil {return err}
 
 	db.hexaindex, err = openHexaIndex(db.dbdir, db.opts)
 	if err != nil {return err}
@@ -170,7 +162,6 @@ func (db *DBGraph) Close() (bool, error) {
 	db.IsOpen = false
 	db.meta.Close()
 	db.elements.Close()
-	db.edges.Close()
 	db.hexaindex.Close()
 	db.props.Close()
 	db.opts.Close()
@@ -178,7 +169,6 @@ func (db *DBGraph) Close() (bool, error) {
 	db.wo.Close()
 	db.meta = nil
 	db.elements = nil
-	db.edges = nil
 	db.hexaindex = nil
 	db.props = nil
 	db.opts = nil
@@ -455,11 +445,8 @@ func (db *DBGraph) AddEdge(id []byte, outvertex *DBVertex, invertex *DBVertex, l
 	edge := &DBEdge{&DBElement{db, id, EdgeType}, outvertex, invertex, label}
 
 	labelbyte := []byte(label)
-	//err = db.edges.Put(db.wo, id, db.toEdgeRecord(outvertex, invertex, label))
-	err = db.edges.Put(db.wo, id, joinBytes(db.recsep, outvertex.id, invertex.id, labelbyte))
-	if err != nil {return nil, err}
 
-	// //todo - add hexascale index
+	// - add hexascale index
 	hi, _ := newHexaIndexKey(db.recsep, outvertex.id, invertex.id, id)
 
 	wb := levigo.NewWriteBatch()
@@ -508,13 +495,23 @@ func (db *DBGraph) Edge(id []byte) *DBEdge {
 	if err != nil {return nil}
 	if val == nil {return nil}
 	if ElementType(val) != EdgeType {return nil}
-	val, err = db.edges.Get(db.ro, id)
-	if err != nil {return nil}
-	if val == nil {return nil}
-	outvertex, invertex, label := db.fromEdgeRecord(val)
-	//fmt.Printf("evout=%v\n", val)
-	edge := &DBEdge{&DBElement{db, id, EdgeType}, outvertex, invertex, label}
-	return edge
+
+	prefix := joinBytes(db.recsep, []byte(PSO), id)
+	ro := levigo.NewReadOptions()
+	ro.SetFillCache(false)
+	it := db.hexaindex.NewIterator(ro)
+	defer it.Close()
+	defer ro.Close()
+	it.Seek(prefix)
+	if it.Valid() && bytes.HasPrefix(it.Key(), prefix) {
+		outvertexid, invertexid, eid, _  := idsFromHexaKey(db.recsep, it.Key())
+		outvertex := &DBVertex{&DBElement{db, outvertexid, VertexType}}
+		invertex := &DBVertex{&DBElement{db, invertexid, VertexType}}
+		edge := &DBEdge{&DBElement{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
+		return edge
+	} else {
+		return nil
+	}
 }
 
 func (db *DBGraph) DelEdge(edge *DBEdge) error {
@@ -573,7 +570,6 @@ func (db *DBGraph) delEdge(edge *DBEdge) error {
 	err = db.elements.Delete(db.wo, id)
 	if err != nil {return err}
 	
-	err = db.edges.Delete(db.wo, id)
 	db.keepcount(EdgeType, -1)
 	
 
@@ -582,23 +578,27 @@ func (db *DBGraph) delEdge(edge *DBEdge) error {
 
 func (db *DBGraph) Edges() []*DBEdge {
 	edges := []*DBEdge{}
-	var edge *DBEdge
-	ro := levigo.NewReadOptions()
-	defer ro.Close()
-	ro.SetFillCache(false)
-	it := db.edges.NewIterator(ro)
-	defer it.Close()
-	it.SeekToFirst()
-	var label string
-	var outvertex, invertex *DBVertex
-	for it = it; it.Valid(); it.Next() {
-		outvertex, invertex, label = db.fromEdgeRecord(it.Value())
 
-		edge = &DBEdge{&DBElement{db, it.Key(), EdgeType}, outvertex, invertex, label}
+	prefix := []byte(PSO)
+	ro := levigo.NewReadOptions()
+	ro.SetFillCache(false)
+	it := db.hexaindex.NewIterator(ro)
+	defer it.Close()
+	defer ro.Close()
+	it.Seek(prefix)
+
+	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+		outvertexid, invertexid, eid, _  := idsFromHexaKey(db.recsep, it.Key())
+		outvertex := &DBVertex{&DBElement{db, outvertexid, VertexType}}
+		invertex := &DBVertex{&DBElement{db, invertexid, VertexType}}
+		edge := &DBEdge{&DBElement{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
 		edges = append(edges, edge)
 	}
+
 	return edges
+
 }
+
 
 func (db *DBGraph) EdgeCount() uint64 {
 	return db.keepcount(EdgeType, 0)

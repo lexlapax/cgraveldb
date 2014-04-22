@@ -24,7 +24,6 @@ func TestGraphOpenGraph(t *testing.T){
 		if reflect.TypeOf(gdb.meta).String() != "*levigo.DB" { t.Error("gdb not valid type")}
 		if gdb.meta == nil { t.Error("meta is nil") }
 		if gdb.elements == nil { t.Error("elements is nil") }
-		if gdb.edges == nil { t.Error("edges is nil") }
 		if gdb.hexaindex == nil { t.Error("hexaindex is nil") }
 		if gdb.props == nil { t.Error("props is nil") }
 		if bytes.Compare(gdb.recsep, []byte("\x1f")) != 0 { t.Error("recsep does not match") }
