@@ -470,15 +470,6 @@ func joinBytes(sep []byte, elements ...[]byte) ([]byte) {
 	return bytes.Join(elements, sep)
 }
 
-/*
-func splitBytes(sep []byte, elements []byte) (int, [][]byte) {
-	if elements == nil {return 0, nil}
-	elementarr := bytes.Split(elements, sep)
-	n := len(elementarr)
-	return n, elementarr
-}
-*/
-
 func (db *DBGraph) fromEdgeRecord(record []byte) (*DBVertex, *DBVertex, string) {
 	if record == nil { return nil, nil, ""}
 	edgevalues := bytes.Split(record, db.recsep)
