@@ -57,7 +57,7 @@ type HexaIndexKeys struct {
 }
 
 
-type DBGraph struct {
+type GraphLevigo struct {
 	meta *levigo.DB
 	elements *levigo.DB
 	hexaindex *levigo.DB
@@ -95,7 +95,7 @@ func openProps(dbdir string, opts *levigo.Options) (*levigo.DB, error) {
 	return levigo.Open(path.Join(dbdir, propdb), opts)
 }
 
-func (db *DBGraph) Open() (error) {
+func (db *GraphLevigo) Open() (error) {
 	if db.IsOpen == true {return errors.New("db already open") }
 	err := os.MkdirAll(db.dbdir, 0755)
 	if err != nil { return err }
@@ -136,10 +136,10 @@ func (db *DBGraph) Open() (error) {
 }
 
 
-func OpenGraph(dbdir string) (*DBGraph, error ) {
+func OpenGraph(dbdir string) (*GraphLevigo, error ) {
 	if dbdir == "" { return nil, NoDirectory }
 
-	db := new(DBGraph)
+	db := new(GraphLevigo)
 	db.dbdir = dbdir
 	db.IsOpen = false
 
@@ -148,7 +148,7 @@ func OpenGraph(dbdir string) (*DBGraph, error ) {
 	return db, nil
 }
 
-func (db *DBGraph) Clear() (error) {
+func (db *GraphLevigo) Clear() (error) {
 	dbdir := db.dbdir
 	db.Close()
 	os.RemoveAll(dbdir)
@@ -156,7 +156,7 @@ func (db *DBGraph) Clear() (error) {
 }
 
 
-func (db *DBGraph) Close() (bool, error) {
+func (db *GraphLevigo) Close() (bool, error) {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
 	db.IsOpen = false
@@ -177,19 +177,19 @@ func (db *DBGraph) Close() (bool, error) {
 	return true, nil
 }
 
-func (db *DBGraph) String() (string) {
-	str := fmt.Sprintf("#DBGraph:dbdir=%v#",db.dbdir)
+func (db *GraphLevigo) String() (string) {
+	str := fmt.Sprintf("#GraphLevigo:dbdir=%v#",db.dbdir)
 	return str
 }
 
-func(db *DBGraph) getDbProperty(prop string) ([]byte, error){
+func(db *GraphLevigo) getDbProperty(prop string) ([]byte, error){
 	if prop == "" {return nil, NilValue}
 	val, err := db.meta.Get(db.ro, []byte(prop))
 	if err != nil {return nil, err}
 	return val, nil
 }
 
-func(db *DBGraph) putDbProperty(prop string, val []byte) ([]byte, error){
+func(db *GraphLevigo) putDbProperty(prop string, val []byte) ([]byte, error){
 	if prop == "" {return nil, NilValue}
 	key := []byte(prop)
 	oldval, err := db.meta.Get(db.ro, key)
@@ -199,7 +199,7 @@ func(db *DBGraph) putDbProperty(prop string, val []byte) ([]byte, error){
 	return oldval, nil
 }
 
-func (db *DBGraph) keepcount(etype ElementType, upordown int) (uint64) {
+func (db *GraphLevigo) keepcount(etype ElementType, upordown int) (uint64) {
 	var storedcount, returncount uint64
 	var key string
 	if etype == VertexType {
@@ -233,7 +233,7 @@ func (db *DBGraph) keepcount(etype ElementType, upordown int) (uint64) {
 	return returncount
 }
 
-func (db *DBGraph) AddVertex(id []byte) (*DBVertex, error) {
+func (db *GraphLevigo) AddVertex(id []byte) (*VertexLevigo, error) {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
 	if id == nil {return nil, NilValue}
@@ -243,20 +243,20 @@ func (db *DBGraph) AddVertex(id []byte) (*DBVertex, error) {
 	}
 	err = db.elements.Put(db.wo, id, []byte(VertexType))
 	if err != nil {return nil, err}
-	vertex := &DBVertex{&DBElement{db,id,VertexType}}
+	vertex := &VertexLevigo{&ElementLevigo{db,id,VertexType}}
 	db.keepcount(VertexType, 1)
 	return vertex, nil
 }
 
-func (db *DBGraph) Vertex(id []byte) *DBVertex {
+func (db *GraphLevigo) Vertex(id []byte) *VertexLevigo {
 	if id == nil {return nil }
 	val,err := db.elements.Get(db.ro, id)
 	if err != nil {return nil}
 	if val == nil {return nil}
 	if ElementType(val) != VertexType {return nil}
-	vertex := &DBVertex{&DBElement{db, id, VertexType}}
+	vertex := &VertexLevigo{&ElementLevigo{db, id, VertexType}}
 	/*
-	vertex := new(DBVertex)
+	vertex := new(VertexLevigo)
 	vertex.db = db
 	vertex.id = id
 	vertex.Elementtype = VertexType
@@ -264,15 +264,15 @@ func (db *DBGraph) Vertex(id []byte) *DBVertex {
 	return vertex
 }
 
-func (db *DBGraph) DelVertex(vertex *DBVertex) error {
+func (db *GraphLevigo) DelVertex(vertex *VertexLevigo) error {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
 	return db.delVertex(vertex)
 }
 
-func (db *DBGraph) delVertex(vertex *DBVertex) error {
+func (db *GraphLevigo) delVertex(vertex *VertexLevigo) error {
 	if vertex == nil {	return NilValue }
-	if vertex.DBElement == nil { return NilValue }
+	if vertex.ElementLevigo == nil { return NilValue }
 	id := vertex.Id()
 	if id == nil {	return NilValue }
 	val,err := db.elements.Get(db.ro, id)
@@ -317,9 +317,9 @@ func (db *DBGraph) delVertex(vertex *DBVertex) error {
 	return nil
 }
 
-func (db *DBGraph) Vertices() []*DBVertex {
-	vertii := []*DBVertex{}
-	var vertex *DBVertex
+func (db *GraphLevigo) Vertices() []*VertexLevigo {
+	vertii := []*VertexLevigo{}
+	var vertex *VertexLevigo
 	ro := levigo.NewReadOptions()
 	ro.SetFillCache(false)
 	it := db.elements.NewIterator(ro)
@@ -328,15 +328,15 @@ func (db *DBGraph) Vertices() []*DBVertex {
 	it.SeekToFirst()
 	for it = it; it.Valid(); it.Next() {
 		if ElementType(it.Value()) == VertexType {
-			vertex = &DBVertex{&DBElement{db, it.Key(), VertexType}}
+			vertex = &VertexLevigo{&ElementLevigo{db, it.Key(), VertexType}}
 			vertii = append(vertii, vertex)
 		}
 	}
 	return vertii
 }
 
-func (db *DBGraph) vertexEdges(outorin int, vertex *DBVertex) ([]*DBEdge) {
-	edges := []*DBEdge{}
+func (db *GraphLevigo) vertexEdges(outorin int, vertex *VertexLevigo) ([]*EdgeLevigo) {
+	edges := []*EdgeLevigo{}
 	if vertex == nil || vertex.id == nil { return edges }
 	
 	// outorin == 0 is out, 1 = in
@@ -368,11 +368,11 @@ func (db *DBGraph) vertexEdges(outorin int, vertex *DBVertex) ([]*DBEdge) {
 
 }
 
-func (db *DBGraph) VertexOutEdges(vertex *DBVertex) ([]*DBEdge) {
+func (db *GraphLevigo) VertexOutEdges(vertex *VertexLevigo) ([]*EdgeLevigo) {
 	return db.vertexEdges(0, vertex)
 }
 
-func (db *DBGraph) VertexInEdges(vertex *DBVertex) ([]*DBEdge) {
+func (db *GraphLevigo) VertexInEdges(vertex *VertexLevigo) ([]*EdgeLevigo) {
 	return db.vertexEdges(1, vertex)
 }
 
@@ -429,7 +429,7 @@ func newHexaIndexKey(sep []byte, subject []byte, object []byte, predicate []byte
 }
 
 
-func (db *DBGraph) AddEdge(id []byte, outvertex *DBVertex, invertex *DBVertex, label string) (*DBEdge, error) {
+func (db *GraphLevigo) AddEdge(id []byte, outvertex *VertexLevigo, invertex *VertexLevigo, label string) (*EdgeLevigo, error) {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
 	if (id == nil) {return nil, NilValue}
@@ -442,7 +442,7 @@ func (db *DBGraph) AddEdge(id []byte, outvertex *DBVertex, invertex *DBVertex, l
 	}
 	err = db.elements.Put(db.wo, id, []byte(EdgeType))
 	if err != nil {return nil, err}
-	edge := &DBEdge{&DBElement{db, id, EdgeType}, outvertex, invertex, label}
+	edge := &EdgeLevigo{&ElementLevigo{db, id, EdgeType}, outvertex, invertex, label}
 
 	labelbyte := []byte(label)
 
@@ -470,7 +470,7 @@ func joinBytes(sep []byte, elements ...[]byte) ([]byte) {
 	return bytes.Join(elements, sep)
 }
 
-func (db *DBGraph) fromEdgeRecord(record []byte) (*DBVertex, *DBVertex, string) {
+func (db *GraphLevigo) fromEdgeRecord(record []byte) (*VertexLevigo, *VertexLevigo, string) {
 	if record == nil { return nil, nil, ""}
 	edgevalues := bytes.Split(record, db.recsep)
 
@@ -480,7 +480,7 @@ func (db *DBGraph) fromEdgeRecord(record []byte) (*DBVertex, *DBVertex, string) 
 	return outvertex, invertex, label
 }
 
-func (db *DBGraph) Edge(id []byte) *DBEdge {
+func (db *GraphLevigo) Edge(id []byte) *EdgeLevigo {
 	if id == nil {return nil }
 	val,err := db.elements.Get(db.ro, id)
 	if err != nil {return nil}
@@ -496,24 +496,24 @@ func (db *DBGraph) Edge(id []byte) *DBEdge {
 	it.Seek(prefix)
 	if it.Valid() && bytes.HasPrefix(it.Key(), prefix) {
 		outvertexid, invertexid, eid, _  := idsFromHexaKey(db.recsep, it.Key())
-		outvertex := &DBVertex{&DBElement{db, outvertexid, VertexType}}
-		invertex := &DBVertex{&DBElement{db, invertexid, VertexType}}
-		edge := &DBEdge{&DBElement{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
+		outvertex := &VertexLevigo{&ElementLevigo{db, outvertexid, VertexType}}
+		invertex := &VertexLevigo{&ElementLevigo{db, invertexid, VertexType}}
+		edge := &EdgeLevigo{&ElementLevigo{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
 		return edge
 	} else {
 		return nil
 	}
 }
 
-func (db *DBGraph) DelEdge(edge *DBEdge) error {
+func (db *GraphLevigo) DelEdge(edge *EdgeLevigo) error {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
 	return db.delEdge(edge) 
 }
 
-func (db *DBGraph) delEdge(edge *DBEdge) error {
+func (db *GraphLevigo) delEdge(edge *EdgeLevigo) error {
 	if edge == nil {	return NilValue }
-	if edge.DBElement == nil { return NilValue }
+	if edge.ElementLevigo == nil { return NilValue }
 	id := edge.Id()
 	if id == nil {	return NilValue }
 	val,err := db.elements.Get(db.ro, id)
@@ -567,8 +567,8 @@ func (db *DBGraph) delEdge(edge *DBEdge) error {
 	return nil
 }
 
-func (db *DBGraph) Edges() []*DBEdge {
-	edges := []*DBEdge{}
+func (db *GraphLevigo) Edges() []*EdgeLevigo {
+	edges := []*EdgeLevigo{}
 
 	prefix := []byte(PSO)
 	ro := levigo.NewReadOptions()
@@ -580,9 +580,9 @@ func (db *DBGraph) Edges() []*DBEdge {
 
 	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
 		outvertexid, invertexid, eid, _  := idsFromHexaKey(db.recsep, it.Key())
-		outvertex := &DBVertex{&DBElement{db, outvertexid, VertexType}}
-		invertex := &DBVertex{&DBElement{db, invertexid, VertexType}}
-		edge := &DBEdge{&DBElement{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
+		outvertex := &VertexLevigo{&ElementLevigo{db, outvertexid, VertexType}}
+		invertex := &VertexLevigo{&ElementLevigo{db, invertexid, VertexType}}
+		edge := &EdgeLevigo{&ElementLevigo{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
 		edges = append(edges, edge)
 	}
 
@@ -591,22 +591,22 @@ func (db *DBGraph) Edges() []*DBEdge {
 }
 
 
-func (db *DBGraph) EdgeCount() uint64 {
+func (db *GraphLevigo) EdgeCount() uint64 {
 	return db.keepcount(EdgeType, 0)
 }
 
-func (db *DBGraph) VertexCount() uint64 {
+func (db *GraphLevigo) VertexCount() uint64 {
 	return db.keepcount(VertexType, 0)
 }
 
-func (db *DBGraph) getPropKey(id []byte, prop string) ([]byte) {
+func (db *GraphLevigo) getPropKey(id []byte, prop string) ([]byte) {
 	keyvalues := [][]byte{}
 	keyvalues = append(keyvalues,id, []byte(prop))
 	key := bytes.Join(keyvalues, db.recsep)
 	return key
 }
 
-func (db *DBGraph) ElementProperty(element *DBElement, prop string) ([]byte) {
+func (db *GraphLevigo) ElementProperty(element *ElementLevigo, prop string) ([]byte) {
 	if prop == "" || element == nil || element.id == nil { return nil }
 	key := db.getPropKey(element.id, prop)
 	val, err := db.props.Get(db.ro, key)
@@ -614,7 +614,7 @@ func (db *DBGraph) ElementProperty(element *DBElement, prop string) ([]byte) {
 	return val
 }
 
-func (db *DBGraph) ElementSetProperty(element *DBElement, prop string, value []byte) (error){
+func (db *GraphLevigo) ElementSetProperty(element *ElementLevigo, prop string, value []byte) (error){
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
 	if prop == "" || element == nil || element.id == nil { return nil }
@@ -623,7 +623,7 @@ func (db *DBGraph) ElementSetProperty(element *DBElement, prop string, value []b
 	return err
 }
 
-func (db *DBGraph) ElementDelProperty(element *DBElement, prop string) ([]byte) {
+func (db *GraphLevigo) ElementDelProperty(element *ElementLevigo, prop string) ([]byte) {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
 	if prop == "" || element == nil || element.id == nil { return nil }
@@ -635,7 +635,7 @@ func (db *DBGraph) ElementDelProperty(element *DBElement, prop string) ([]byte) 
 	return val
 }
 
-func (db *DBGraph) ElementPropertyKeys(element *DBElement) ([]string) {
+func (db *GraphLevigo) ElementPropertyKeys(element *ElementLevigo) ([]string) {
 	propkeys := []string{}
 	ro := levigo.NewReadOptions()
 	ro.SetFillCache(false)

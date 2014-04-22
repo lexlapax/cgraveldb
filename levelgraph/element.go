@@ -12,32 +12,32 @@ const (
 	EdgeType ="2"
 )
 
-type DBElement struct {
-	db *DBGraph
+type ElementLevigo struct {
+	db *GraphLevigo
 	id []byte
 	Elementtype ElementType
 }
 
-func (element *DBElement) Property(prop string) ([]byte) {
+func (element *ElementLevigo) Property(prop string) ([]byte) {
 	return element.db.ElementProperty(element, prop)
 }
 
-func (element *DBElement) SetProperty(prop string, value []byte) (error){
+func (element *ElementLevigo) SetProperty(prop string, value []byte) (error){
 	return element.db.ElementSetProperty(element, prop, value)
 }
 
-func (element *DBElement) DelProperty(prop string) ([]byte) {
+func (element *ElementLevigo) DelProperty(prop string) ([]byte) {
 	return element.db.ElementDelProperty(element, prop)
 }
 
-func (element *DBElement) PropertyKeys() ([]string) {
+func (element *ElementLevigo) PropertyKeys() ([]string) {
 	return element.db.ElementPropertyKeys(element)
 }
 
-func (element *DBElement) Id() ([]byte) {
+func (element *ElementLevigo) Id() ([]byte) {
 	return element.id
 }
 
-func (element *DBElement) IdAsString() (string) {
+func (element *ElementLevigo) IdAsString() (string) {
 	return string(element.id[:])
 }

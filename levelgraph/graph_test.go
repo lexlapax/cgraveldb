@@ -33,7 +33,7 @@ func TestGraphOpenGraph(t *testing.T){
 		fi, _ := os.Lstat(dbdir)
 		if !fi.IsDir() { t.Error("dbdir should be a directory") }
 		if fi.Name() != "testing.db" { t.Error("dbdir name should match") }
-		if gdb.String() != "#DBGraph:dbdir=./testing.db#" { t.Error("String method does not match")}
+		if gdb.String() != "#GraphLevigo:dbdir=./testing.db#" { t.Error("String method does not match")}
 		gdb.Close()
 	}
 }
@@ -54,7 +54,7 @@ func TestGraphVertexAdd(t *testing.T) {
 		assert.Equal(t, id, vertex.Id())
 		assert.Equal(t, VertexType, vertex.Elementtype)
 		assert.Equal(t, nil, err)
-		assert.Equal(t, "<DBVertex:somerandomstringid@#DBGraph:dbdir=./testing.db#>", vertex.String())
+		assert.Equal(t, "<VertexLevigo:somerandomstringid@#GraphLevigo:dbdir=./testing.db#>", vertex.String())
 	}
 	vertexb, errb := gdb.AddVertex(id) 
 	assert.True(t, vertexb == nil)
@@ -106,10 +106,10 @@ func TestGraphVertexDel(t *testing.T) {
 
 	err := gdb.DelVertex(nil)
 	assert.Equal(t, NilValue, err)
-	err = gdb.DelVertex(new(DBVertex))
+	err = gdb.DelVertex(new(VertexLevigo))
 	assert.Equal(t, NilValue, err)
 
-	vertexnull := &DBVertex{new(DBElement)}
+	vertexnull := &VertexLevigo{new(ElementLevigo)}
 	vertexnull.db = gdb 
 	vertexnull.id = ida 
 	vertexnull.Elementtype = VertexType
@@ -136,8 +136,8 @@ func TestGraphVertexCount(t *testing.T) {
 	vertexa,_ := gdb.AddVertex(ida)
 	assert.Equal(t, uint64(1), gdb.VertexCount())
 
-	testvertii := []*DBVertex{}
-	var vertex *DBVertex
+	testvertii := []*VertexLevigo{}
+	var vertex *VertexLevigo
 	alpha := []string{"a","b","c","d","e"}
 	numb := []string{"1","2","3","4","5"}
 	for _,a := range alpha {
@@ -165,8 +165,8 @@ func TestGraphVertexGetAll(t *testing.T) {
 	defer gdb.Close()
 
 	ida := []byte("somerandomstringid")
-	testvertii := []*DBVertex{}
-	var vertex *DBVertex
+	testvertii := []*VertexLevigo{}
+	var vertex *VertexLevigo
 
 	assert.True(t, len(gdb.Vertices()) == 0)
 
@@ -217,7 +217,7 @@ func TestGraphEdgeAdd(t *testing.T) {
 		assert.Equal(t, eid1, edge1.Id())
 		assert.Equal(t, EdgeType, edge1.Elementtype)
 		assert.Equal(t, nil, err)
-		assert.Equal(t, "<DBEdge:thisisedge1,s=thisisvertex1,o=thisisvertex2,l=edgeforward@#DBGraph:dbdir=./testing.db#>", edge1.String())
+		assert.Equal(t, "<EdgeLevigo:thisisedge1,s=thisisvertex1,o=thisisvertex2,l=edgeforward@#GraphLevigo:dbdir=./testing.db#>", edge1.String())
 		assert.Equal(t, vertex1, edge1.VertexOut())
 		assert.Equal(t, vertex2, edge1.VertexIn())
 		assert.Equal(t, "edgeforward", edge1.Label())
@@ -266,11 +266,11 @@ func TestGraphEdgeDel(t *testing.T) {
 
 	err := gdb.DelEdge(nil)
 	assert.Equal(t, NilValue, err)
-	err = gdb.DelEdge(new(DBEdge))
+	err = gdb.DelEdge(new(EdgeLevigo))
 	assert.Equal(t, NilValue, err)
 
 
-	edgenull := &DBEdge{new(DBElement),nil,nil,""}
+	edgenull := &EdgeLevigo{new(ElementLevigo),nil,nil,""}
 	edgenull.db = gdb 
 	edgenull.id = eid1 
 	edgenull.Elementtype = EdgeType
@@ -303,8 +303,8 @@ func TestGraphEdgeGetAll(t *testing.T) {
 	vertex2,_ := gdb.AddVertex(vid2)
 
 	assert.True(t, len(gdb.Edges()) == 0)
-	testedges := []*DBEdge{}
-	var edge *DBEdge
+	testedges := []*EdgeLevigo{}
+	var edge *EdgeLevigo
 	alpha := []string{"a","b","c","d","e"}
 	numb := []string{"1","2","3","4","5"}
 	for _,a := range alpha {
@@ -340,8 +340,8 @@ func TestGraphEdgeCount(t *testing.T) {
 	edge1,_ := gdb.AddEdge(eid1, vertex1, vertex2, "edgeforward")
 	assert.Equal(t, uint64(1), gdb.EdgeCount())
 
-	testedges := []*DBEdge{}
-	var edge *DBEdge
+	testedges := []*EdgeLevigo{}
+	var edge *EdgeLevigo
 	alpha := []string{"a","b","c","d","e"}
 	numb := []string{"1","2","3","4","5"}
 	for _,a := range alpha {
