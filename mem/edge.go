@@ -10,14 +10,14 @@ var (
 )
 
 type EdgeMem struct {
-	*NodeMem
+	*AtomMem
 	subject *VertexMem
 	object *VertexMem
 	label string
 }
 
 func NewEdgeMem(db *GraphMem, id []byte, subject *VertexMem, object *VertexMem, label string) *EdgeMem {
-	edge := &EdgeMem{NewNodeMem(db, id, VertexType), subject, object, label}
+	edge := &EdgeMem{NewAtomMem(db, id, VertexType), subject, object, label}
 	return edge
 }
 

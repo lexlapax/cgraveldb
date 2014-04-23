@@ -6,13 +6,13 @@ import (
 )
 
 type VertexMem struct {
-	*NodeMem
+	*AtomMem
 	outedges map[string]mapset.Set
 	inedges map[string]mapset.Set
 }
 
 func NewVertexMem(db *GraphMem, id []byte) *VertexMem {
-	vertex := &VertexMem{NewNodeMem(db, id, VertexType), make(map[string]mapset.Set), make(map[string]mapset.Set)}
+	vertex := &VertexMem{NewAtomMem(db, id, VertexType), make(map[string]mapset.Set), make(map[string]mapset.Set)}
 	return vertex
 }
 

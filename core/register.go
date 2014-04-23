@@ -6,12 +6,21 @@ import (
 
 var graphDbs = make(map[string]Graph)
 
-func Register(name string, graph Graph) {
+func Register(graphimpl string, graph Graph) {
 	if graph == nil {
 		panic("core: Register graph implementation is nil")
 	}
-	if _, ok := graphDbs[name]; ok {
-		panic("core: Register called twice for graph implementation " + name)
+	if _, ok := graphDbs[graphimpl]; ok {
+		panic("core: Register called twice for graph implementation " + graphimpl)
 	}
-	graphDbs[name] = graph
+	graphDbs[graphimpl] = graph
+}
+
+func GetGraph(graphimpl string) Graph {
+	if graph, ok := graphDbs[graphimpl]; ok {
+		return graph
+	} else {
+		panic("core: Graph implementation not found for " + graphimpl)
+	}
+
 }

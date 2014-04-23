@@ -11,7 +11,7 @@ const (
 	DirReverse = 2
 )
 
-type Node interface {
+type Atom interface {
 	Id() []byte
 	Property(prop string) ([]byte, error)
 	SetProperty(prop string, value []byte) error
@@ -20,7 +20,7 @@ type Node interface {
 }
 
 type Edge interface {
-	Node
+	Atom
 	Label() string
 	Vertex(direction Direction) (Vertex, error)
 	VertexOut() (Vertex, error)
@@ -28,8 +28,9 @@ type Edge interface {
 	//String() string
 }
 
+// todo add channel interfaces for iteration
 type Vertex interface {
-	Node
+	Atom
 	Edges(direction Direction, labels ...string) ([]Edge, error)
 	Vertices(direction Direction, labels ...string) ([]Vertex, error)
 	OutEdges(labels ...string) ([]Edge, error)
@@ -38,6 +39,7 @@ type Vertex interface {
 	//String() string
 }
 
+// todo add channel interfaces for iteration
 type Graph interface {
 	AddVertex(id []byte) (Vertex, error)
 	Vertex(id []byte) (Vertex, error)
@@ -49,6 +51,7 @@ type Graph interface {
 	Edges() ([]Edge, error)
 	EdgeCount() uint
 	VertexCount() uint
-	Open() error
+	IsOpen() bool
+	Open(args ...interface{}) error
 	Close() error
 }
