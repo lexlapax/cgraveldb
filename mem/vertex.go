@@ -8,12 +8,15 @@ import (
 
 type VertexMem struct {
 	*AtomMem
-	outedges map[string]mapset.Set
-	inedges map[string]mapset.Set
+	// outedges map[string]mapset.Set
+	// inedges map[string]mapset.Set
+	outedges map[string]*edgeSet
+	inedges map[string]*edgeSet
 }
 
 func NewVertexMem(db *GraphMem, id []byte) *VertexMem {
-	vertex := &VertexMem{NewAtomMem(db, id, VertexType), make(map[string]mapset.Set), make(map[string]mapset.Set)}
+	//vertex := &VertexMem{NewAtomMem(db, id, VertexType), make(map[string]mapset.Set), make(map[string]mapset.Set)}
+	vertex := &VertexMem{NewAtomMem(db, id, VertexType), make(map[string]*edgeSet), make(map[string]*edgeSet)}
 	return vertex
 }
 
@@ -43,38 +46,31 @@ func (vertex *VertexMem) Vertices(direction core.Direction, labels ...string) ([
 	return nil, nil
 }
 
+func iterEdgeSet(edgechan <-chan interface{}, edges *[]core.Edge) {
+	for s:= range edgechan {
+		*edges = append(*edges, s.(core.Edge))
+	}
+}
+
 func (vertex *VertexMem) OutEdges(labels ...string) ([]core.Edge, error) {
 	totaledges := []core.Edge{}
 	for _, label := range labels {
 		if edges, ok := vertex.outedges[label]; ok {
-			//cs := make(chan core.Edge)
-			for s := range edges.Iter() {
-				fmt.Printf("s iter= %v\n", s)
-        		totaledges = append(totaledges, s.(core.Edge))
-    		}
+			go iterEdgeSet(edges.Iter(), &totaledges)
 		}
 	}
+	fmt.Printf("totaledges=%v\n", totaledges)
 	return totaledges, nil
-}
-
-func iterEdgeSet(edgechan <-chan core.Edge) []core.Edge {
-	edges := []core.Edge{}
-	for s:= range edgechan {
-		edges = append(edges, s)
-	}
 }
 
 func (vertex *VertexMem) InEdges(labels ...string) ([]core.Edge, error) {
 	totaledges := []core.Edge{}
 	for _, label := range labels {
 		if edges, ok := vertex.inedges[label]; ok {
-			//cs := make(chan core.Edge)
-			for s := range edges.Iter() {
-				fmt.Printf("s iter= %v\n", s)
-        		totaledges = append(totaledges, s.(core.Edge))
-    		}
+			go iterEdgeSet(edges.Iter(), &totaledges)
 		}
 	}
+	fmt.Printf("totaledges=%v\n", totaledges)
 	return totaledges, nil
 }
 

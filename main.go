@@ -137,9 +137,9 @@ func testOutChannel(cs chan int) {
 }
 
 
-func iterEdgeSet(cs <-chan int, edges []int) {
+func iterEdgeSet(cs <-chan int, edges *[]int) {
 	for s:= range cs {
-		edges = append(edges, s)
+		*edges = append(*edges, s)
 	}
 }
 
@@ -153,7 +153,7 @@ func main() {
 	cs := make(chan int)
 	edges := []int{}
 	go testOutChannel(cs)
-	go iterEdgeSet(cs, edges)
+	go iterEdgeSet(cs, &edges)
 	time.Sleep(1 * 1.e9)
 	fmt.Printf("%v\n", edges)
 }
