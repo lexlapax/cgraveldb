@@ -1,4 +1,4 @@
-package mem
+package coretest
 
 import (
 	"github.com/lexlapax/graveldb/core"
@@ -8,10 +8,13 @@ import (
 	//"reflect"
 	//"github.com/jmhodges/levigo"
 	//"fmt"
-	//"github.com/lexlapax/graveldb/core"	
+	"github.com/lexlapax/graveldb/mem"	
 )
 
 var graphimp = "mem"
+func init() {
+	mem.Register()
+}
 
 func TestGraphEmpty(t *testing.T){
 	gdb := core.GetGraph(graphimp)
