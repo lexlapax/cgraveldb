@@ -3,6 +3,7 @@ package mem
 import (
 		"github.com/lexlapax/graveldb/core"
 		mapset "github.com/deckarep/golang-set"
+		"fmt"
 )
 
 type VertexMem struct {
@@ -28,8 +29,10 @@ func (vertex *VertexMem) Edges(direction core.Direction, labels ...string) ([]co
 		return reverse, err
 	} else {
 		forward, err := vertex.OutEdges(labels...)
+		fmt.Printf("forward edges=%v\n",forward)
 		if err != nil {return []core.Edge{}, err}
 		reverse, err := vertex.InEdges(labels...)
+		fmt.Printf("reverse edges=%v\n",reverse)
 		if err != nil {return []core.Edge{}, err}
 		return append(forward, reverse...), nil
 	}
@@ -43,25 +46,32 @@ func (vertex *VertexMem) Vertices(direction core.Direction, labels ...string) ([
 func (vertex *VertexMem) OutEdges(labels ...string) ([]core.Edge, error) {
 	totaledges := []core.Edge{}
 	for _, label := range labels {
-		edges := vertex.outedges[label]
-		if edges != nil {
-			cs := make(chan core.Edge)
-			for s := range cs {
-        		totaledges = append(totaledges, s)
+		if edges, ok := vertex.outedges[label]; ok {
+			//cs := make(chan core.Edge)
+			for s := range edges.Iter() {
+				fmt.Printf("s iter= %v\n", s)
+        		totaledges = append(totaledges, s.(core.Edge))
     		}
 		}
 	}
 	return totaledges, nil
 }
 
+func iterEdgeSet(edgechan <-chan core.Edge) []core.Edge {
+	edges := []core.Edge{}
+	for s:= range edgechan {
+		edges = append(edges, s)
+	}
+}
+
 func (vertex *VertexMem) InEdges(labels ...string) ([]core.Edge, error) {
 	totaledges := []core.Edge{}
 	for _, label := range labels {
-		edges := vertex.inedges[label]
-		if edges != nil {
-			cs := make(chan core.Edge)
-			for s := range cs {
-        		totaledges = append(totaledges, s)
+		if edges, ok := vertex.inedges[label]; ok {
+			//cs := make(chan core.Edge)
+			for s := range edges.Iter() {
+				fmt.Printf("s iter= %v\n", s)
+        		totaledges = append(totaledges, s.(core.Edge))
     		}
 		}
 	}

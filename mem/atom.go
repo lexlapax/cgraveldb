@@ -29,7 +29,7 @@ func NewAtomMem(graph *GraphMem, id []byte, nodeType NodeType) *AtomMem {
 }
 
 func (atom *AtomMem) Id() []byte {
-	return atom.Id()
+	return atom.id
 }
 
 func (atom *AtomMem) Property(prop string) ([]byte, error) {

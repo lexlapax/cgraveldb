@@ -4,6 +4,8 @@ import (
 		"github.com/lexlapax/graveldb/core"
 		"sync"
 		"errors"
+		"fmt"
+		"strconv"
 )
 
 const (
@@ -11,12 +13,18 @@ const (
 	)
 
 var (
+	ErrDoesntExist = errors.New("the object with the id does not exist")
 	ErrAlreadyExists = errors.New("the object with the id already exists")
 	ErrNilValue = errors.New("value passed cannot be nil")
+	register sync.Once
 )
 
+func Register() {
+	register.Do(func() {core.Register(GraphImpl, &GraphMem{})} )
+}
+
 func init() {
-	core.Register(GraphImpl, &GraphMem{})
+	Register()
 }
 
 func NewGraphMem() core.Graph {
@@ -30,7 +38,7 @@ type GraphMem struct {
 	edges map[string]*EdgeMem
 	vertexlock *sync.RWMutex 
 	edgelock *sync.RWMutex
-	nextid uint
+	nextid uint64
 	isopen bool 
 }
 
@@ -69,6 +77,7 @@ func (graph *GraphMem) DelVertex(vertex core.Vertex) error {
 	graph.vertexlock.Lock()
 	defer graph.vertexlock.Unlock()
 	edges, _ := vertex.Edges(core.DirAny)
+	fmt.Printf("edges=%v\n",edges)
 	for _, edge := range edges {
 		graph.DelEdge(edge)
 	}
@@ -105,6 +114,7 @@ func (graph *GraphMem) AddEdge(id []byte, outvertex core.Vertex, invertex core.V
 	subject := outvertex.(*VertexMem)
 	object := invertex.(*VertexMem)
 	edge :=  NewEdgeMem(graph, idstr, subject, object, label)
+	
 	graph.edges[string(idstr[:])] = edge
 	subject.addOutEdge(edge)
 	object.addInEdge(edge)
@@ -123,6 +133,10 @@ func (graph *GraphMem) Edge(id []byte) (core.Edge, error) {
 
 func (graph *GraphMem) DelEdge(edge core.Edge) error {
 	if edge == nil { return ErrNilValue}
+	//fmt.Printf("got to deledge\n")
+	if _, ok := graph.edges[string(edge.Id()[:])]; !ok {
+		return 	ErrDoesntExist
+	}
 	v, _ := edge.VertexOut()
 	vertexout := v.(*VertexMem)
 	v, _ = edge.VertexOut()
@@ -133,7 +147,13 @@ func (graph *GraphMem) DelEdge(edge core.Edge) error {
 }
 
 func (graph *GraphMem) Edges() ([]core.Edge, error) {
-	return nil, nil
+	graph.edgelock.RLock()
+	defer graph.edgelock.RUnlock()
+	edges := []core.Edge{}
+	for _, e := range graph.edges {
+		edges = append(edges, e)
+	}
+	return edges, nil
 }
 
 func (graph *GraphMem) EdgeCount() uint {
@@ -158,7 +178,7 @@ func (graph *GraphMem) Close() error {
 	graph.edges = nil
 	graph.vertexlock = nil
 	graph.edgelock = nil
-	graph.nextid = 0
+	graph.nextid = 1
 	graph.isopen = false
 	return nil
 }
@@ -171,11 +191,11 @@ func (graph *GraphMem) generateId() []byte {
 	id := ""
 	//var vok bool
 	for {
-		id = string(graph.nextid)
+		id = strconv.FormatUint(graph.nextid, 16)
 		graph.nextid++
 		 _, vok := graph.vertices[id]
 		 _, eok := graph.edges[id]
-		if vok  || eok  {
+		if !vok  && !eok  {
 			break
 		}
 	}

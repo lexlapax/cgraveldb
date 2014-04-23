@@ -6,6 +6,7 @@ import (
 	"os"
 	"github.com/jmhodges/levigo"
 	"bytes"
+	"time"
 )
 
 func writeToDb(db *levigo.DB) {
@@ -127,10 +128,34 @@ func DbTest() {
 	//fmt.Println(string(getValueBytes[:]))
 	db.Close()
 }
+func testOutChannel(cs chan int) {
+	for i := 1; i <= 10; i+= 1 {
+		cs <- i
+		fmt.Printf("sent %v\n", i)
 
+	}
+}
+
+
+func iterEdgeSet(cs <-chan int, edges []int) {
+	for s:= range cs {
+		edges = append(edges, s)
+	}
+}
+
+func testReadChannel(cs chan int) {
+	for i := range cs {
+		fmt.Printf("received = %v\n",i)
+	}
+}
 
 func main() {
-	BytesTest()
+	cs := make(chan int)
+	edges := []int{}
+	go testOutChannel(cs)
+	go iterEdgeSet(cs, edges)
+	time.Sleep(1 * 1.e9)
+	fmt.Printf("%v\n", edges)
 }
 
 
