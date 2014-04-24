@@ -26,9 +26,9 @@ func (edge *EdgeMem) Label() string {
 }
 
 func (edge *EdgeMem) Vertex(direction core.Direction) (core.Vertex, error) {
-	if direction == core.DirForward {
+	if direction == core.DirOut {
 		return edge.object, nil
-	} else if direction == core.DirReverse {
+	} else if direction == core.DirIn {
 		return edge.subject, nil
 	} else {
 		return nil, ErrDirAnyUnsupported

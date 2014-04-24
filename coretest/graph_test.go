@@ -53,3 +53,18 @@ func TestGraphAdd(t *testing.T) {
 	err := graph.DelEdge(edge)
 	assert.True(t, err != nil)
 }
+
+func TestGraphSetProperties(t *testing.T) {
+	graph := core.GetGraph(graphimp)
+	graph.Open()
+	defer graph.Close()
+	//todo graph capabilities based
+	a,_ := graph.AddVertex(nil)
+	b,_ := graph.AddVertex(nil)
+	graph.AddEdge(nil, a, b, "knows")
+	graph.AddEdge(nil, a, b, "knows")
+	edges, _ := b.Edges(core.DirIn)
+    for _,edge := range edges {
+            edge.SetProperty("key", []byte("value"))
+    }
+}

@@ -24,10 +24,10 @@ func NewVertexMem(db *GraphMem, id []byte) *VertexMem {
 func (vertex *VertexMem) Edges(direction core.Direction, labels ...string) ([]core.Edge, error) {
 	var forward, reverse []core.Edge
 	var err error
-	if direction == core.DirForward {
+	if direction == core.DirOut {
 		forward, err = vertex.OutEdges(labels...)
 		return forward, err
-	} else if direction == core.DirReverse {
+	} else if direction == core.DirIn {
 		reverse, err = vertex.InEdges(labels...)
 		return reverse, err
 	} else {

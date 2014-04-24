@@ -7,8 +7,8 @@ import (
 type Direction int
 const (
 	DirAny Direction = 0
-	DirForward = 1
-	DirReverse = 2
+	DirOut= 1
+	DirIn = 2
 )
 
 type Atom interface {
