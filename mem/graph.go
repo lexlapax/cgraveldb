@@ -4,8 +4,8 @@ import (
 		"github.com/lexlapax/graveldb/core"
 		"sync"
 		"errors"
-		"fmt"
 		"strconv"
+		//"fmt"
 )
 
 const (
@@ -77,7 +77,7 @@ func (graph *GraphMem) DelVertex(vertex core.Vertex) error {
 	graph.vertexlock.Lock()
 	defer graph.vertexlock.Unlock()
 	edges, _ := vertex.Edges(core.DirAny)
-	fmt.Printf("edges=%v\n",edges)
+	//fmt.Printf("edges=%v\n",edges)
 	for _, edge := range edges {
 		graph.DelEdge(edge)
 	}
@@ -133,16 +133,19 @@ func (graph *GraphMem) Edge(id []byte) (core.Edge, error) {
 
 func (graph *GraphMem) DelEdge(edge core.Edge) error {
 	if edge == nil { return ErrNilValue}
-	//fmt.Printf("got to deledge\n")
 	if _, ok := graph.edges[string(edge.Id()[:])]; !ok {
 		return 	ErrDoesntExist
 	}
+	graph.edgelock.Lock()
+	defer graph.edgelock.Unlock()
+	delete(graph.edges, string(edge.Id()[:]))
 	v, _ := edge.VertexOut()
 	vertexout := v.(*VertexMem)
-	v, _ = edge.VertexOut()
+	v, _ = edge.VertexIn()
 	vertexin := v.(*VertexMem)
 	vertexout.delOutEdge(edge)
-	vertexin.delOutEdge(edge)
+	vertexin.delInEdge(edge)
+	//fmt.Printf("got to deledge\n")
 	return nil
 }
 

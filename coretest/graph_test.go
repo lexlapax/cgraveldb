@@ -7,7 +7,7 @@ import (
 	//"os"
 	//"reflect"
 	//"github.com/jmhodges/levigo"
-	"fmt"
+	//"fmt"
 	"github.com/lexlapax/graveldb/mem"	
 )
 
@@ -33,7 +33,6 @@ func TestGraphAdd(t *testing.T) {
 	graph := core.GetGraph(graphimp)
 	graph.Open()
 	defer graph.Close()
-	fmt.Printf("before add vertex\n")
 
 	a,_ := graph.AddVertex(nil)
 	b,_ := graph.AddVertex(nil)
@@ -45,13 +44,12 @@ func TestGraphAdd(t *testing.T) {
 	edges, _ := graph.Edges()
 	assert.Equal(t, 1, len(edges))
 
-	fmt.Printf("before delvertex\n")
 	graph.DelVertex(a)
+
 	vertices, _ = graph.Vertices()
 	assert.Equal(t, 1, len(vertices))
 	edges, _ = graph.Edges()
 	assert.Equal(t, 0, len(edges))
-	fmt.Printf("before deledge\n")
 	err := graph.DelEdge(edge)
 	assert.True(t, err != nil)
 }
