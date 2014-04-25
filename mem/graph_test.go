@@ -25,5 +25,6 @@ func (suite *GraphTestSuite) TearSuite() {
 }
 
 func TestGraphTestSuite(t *testing.T) {
+	//t.Skip()
     suite.Run(t, new(GraphTestSuite))
 }
