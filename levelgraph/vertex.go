@@ -7,7 +7,7 @@ import (
 )
 
 type VertexLevigo struct {
-	*ElementLevigo
+	*AtomLevigo
 }
 
 /*

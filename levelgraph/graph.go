@@ -22,7 +22,7 @@ var (
 	InvalidParameterValue = errors.New("the value of parameter passed is invalid")
 	DBNotOpen = errors.New("db is not open")
 	metadb = "meta.db"	
-	elementdb = "element.db"
+	nodedb = "node.db"
 	hexaindexdb = "hexaindex.db"
 	propdb = "prop.db"
 	recsep = "\x1f" //the ascii unit separator dec val 31
@@ -59,7 +59,7 @@ type HexaIndexKeys struct {
 
 type GraphLevigo struct {
 	meta *levigo.DB
-	elements *levigo.DB
+	nodes *levigo.DB
 	hexaindex *levigo.DB
 	props *levigo.DB
 	dbdir string
@@ -84,7 +84,7 @@ func openMeta(dbdir string, ro *levigo.ReadOptions, wo *levigo.WriteOptions, opt
 }
 
 func openElements(dbdir string, opts *levigo.Options) (*levigo.DB, error) {
-	return levigo.Open(path.Join(dbdir, elementdb), opts)
+	return levigo.Open(path.Join(dbdir, nodedb), opts)
 }
 
 func openHexaIndex(dbdir string, opts *levigo.Options) (*levigo.DB, error) {
@@ -119,7 +119,7 @@ func (db *GraphLevigo) Open() (error) {
 	db.meta, db.recsep, err = openMeta(db.dbdir, db.ro, db.wo, db.opts)
 	if err != nil {return err}
 
-	db.elements, err = openElements(db.dbdir, db.opts)
+	db.nodes, err = openElements(db.dbdir, db.opts)
 	if err != nil {return err}
 
 
@@ -161,14 +161,14 @@ func (db *GraphLevigo) Close() (bool, error) {
 	defer db.rwlock.Unlock()
 	db.IsOpen = false
 	db.meta.Close()
-	db.elements.Close()
+	db.nodes.Close()
 	db.hexaindex.Close()
 	db.props.Close()
 	db.opts.Close()
 	db.ro.Close()
 	db.wo.Close()
 	db.meta = nil
-	db.elements = nil
+	db.nodes = nil
 	db.hexaindex = nil
 	db.props = nil
 	db.opts = nil
@@ -199,7 +199,7 @@ func(db *GraphLevigo) putDbProperty(prop string, val []byte) ([]byte, error){
 	return oldval, nil
 }
 
-func (db *GraphLevigo) keepcount(etype ElementType, upordown int) (uint64) {
+func (db *GraphLevigo) keepcount(etype NodeType, upordown int) (uint64) {
 	var storedcount, returncount uint64
 	var key string
 	if etype == VertexType {
@@ -237,29 +237,29 @@ func (db *GraphLevigo) AddVertex(id []byte) (*VertexLevigo, error) {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
 	if id == nil {return nil, NilValue}
-	val, err := db.elements.Get(db.ro, id)
+	val, err := db.nodes.Get(db.ro, id)
 	if val != nil {
 		return nil, KeyExists
 	}
-	err = db.elements.Put(db.wo, id, []byte(VertexType))
+	err = db.nodes.Put(db.wo, id, []byte(VertexType))
 	if err != nil {return nil, err}
-	vertex := &VertexLevigo{&ElementLevigo{db,id,VertexType}}
+	vertex := &VertexLevigo{&AtomLevigo{db,id,VertexType}}
 	db.keepcount(VertexType, 1)
 	return vertex, nil
 }
 
 func (db *GraphLevigo) Vertex(id []byte) *VertexLevigo {
 	if id == nil {return nil }
-	val,err := db.elements.Get(db.ro, id)
+	val,err := db.nodes.Get(db.ro, id)
 	if err != nil {return nil}
 	if val == nil {return nil}
-	if ElementType(val) != VertexType {return nil}
-	vertex := &VertexLevigo{&ElementLevigo{db, id, VertexType}}
+	if NodeType(val) != VertexType {return nil}
+	vertex := &VertexLevigo{&AtomLevigo{db, id, VertexType}}
 	/*
 	vertex := new(VertexLevigo)
 	vertex.db = db
 	vertex.id = id
-	vertex.Elementtype = VertexType
+	vertex.nodeType = VertexType
 	*/
 	return vertex
 }
@@ -272,10 +272,10 @@ func (db *GraphLevigo) DelVertex(vertex *VertexLevigo) error {
 
 func (db *GraphLevigo) delVertex(vertex *VertexLevigo) error {
 	if vertex == nil {	return NilValue }
-	if vertex.ElementLevigo == nil { return NilValue }
+	if vertex.AtomLevigo == nil { return NilValue }
 	id := vertex.Id()
 	if id == nil {	return NilValue }
-	val,err := db.elements.Get(db.ro, id)
+	val,err := db.nodes.Get(db.ro, id)
 	if err != nil {return err}
 	if val == nil {return KeyDoesNotExist}
 
@@ -309,7 +309,7 @@ func (db *GraphLevigo) delVertex(vertex *VertexLevigo) error {
 	if err != nil {return err}
 
 	// now delete the vertex
-	err = db.elements.Delete(db.wo, id)
+	err = db.nodes.Delete(db.wo, id)
 	if err != nil {return err}
 	
 	db.keepcount(VertexType, -1)
@@ -322,13 +322,13 @@ func (db *GraphLevigo) Vertices() []*VertexLevigo {
 	var vertex *VertexLevigo
 	ro := levigo.NewReadOptions()
 	ro.SetFillCache(false)
-	it := db.elements.NewIterator(ro)
+	it := db.nodes.NewIterator(ro)
 	defer it.Close()
 	defer ro.Close()
 	it.SeekToFirst()
 	for it = it; it.Valid(); it.Next() {
-		if ElementType(it.Value()) == VertexType {
-			vertex = &VertexLevigo{&ElementLevigo{db, it.Key(), VertexType}}
+		if NodeType(it.Value()) == VertexType {
+			vertex = &VertexLevigo{&AtomLevigo{db, it.Key(), VertexType}}
 			vertii = append(vertii, vertex)
 		}
 	}
@@ -376,37 +376,37 @@ func (db *GraphLevigo) VertexInEdges(vertex *VertexLevigo) ([]*EdgeLevigo) {
 	return db.vertexEdges(1, vertex)
 }
 
-func idsFromHexaKey(sep []byte, elements []byte) ([]byte, []byte, []byte, error) {
-	if elements == nil { return nil, nil, nil, NilValue }
-	elementarr := bytes.Split(elements, sep)
-	if len(elementarr) != 4 {return nil,nil,nil, InvalidParameterValue }
+func idsFromHexaKey(sep []byte, nodes []byte) ([]byte, []byte, []byte, error) {
+	if nodes == nil { return nil, nil, nil, NilValue }
+	nodearr := bytes.Split(nodes, sep)
+	if len(nodearr) != 4 {return nil,nil,nil, InvalidParameterValue }
 	var subject, object, predicate []byte
 
-	switch HexaIndexType(elementarr[0]) {
+	switch HexaIndexType(nodearr[0]) {
 		case SPO:
-			subject = elementarr[1]
-			object = elementarr[3]
-			predicate = elementarr[2]
+			subject = nodearr[1]
+			object = nodearr[3]
+			predicate = nodearr[2]
 		case SOP:
-			subject = elementarr[1]
-			object = elementarr[2]
-			predicate = elementarr[3]
+			subject = nodearr[1]
+			object = nodearr[2]
+			predicate = nodearr[3]
 		case OPS:
-			subject = elementarr[3]
-			object = elementarr[1]
-			predicate = elementarr[2]
+			subject = nodearr[3]
+			object = nodearr[1]
+			predicate = nodearr[2]
 		case OSP:
-			subject = elementarr[2]
-			object = elementarr[1]
-			predicate = elementarr[3]
+			subject = nodearr[2]
+			object = nodearr[1]
+			predicate = nodearr[3]
 		case PSO:
-			subject = elementarr[2]
-			object = elementarr[3]
-			predicate = elementarr[1]
+			subject = nodearr[2]
+			object = nodearr[3]
+			predicate = nodearr[1]
 		case POS:
-			subject = elementarr[3]
-			object = elementarr[2]
-			predicate = elementarr[1]
+			subject = nodearr[3]
+			object = nodearr[2]
+			predicate = nodearr[1]
 		default:
 			subject, object, predicate = nil, nil, nil
 	}
@@ -436,13 +436,13 @@ func (db *GraphLevigo) AddEdge(id []byte, outvertex *VertexLevigo, invertex *Ver
 	if (outvertex == nil) {return nil, NilValue}
 	if (invertex == nil) {return nil, NilValue}
 
-	val,err := db.elements.Get(db.ro, id)
+	val,err := db.nodes.Get(db.ro, id)
 	if val != nil {
 		return nil, KeyExists
 	}
-	err = db.elements.Put(db.wo, id, []byte(EdgeType))
+	err = db.nodes.Put(db.wo, id, []byte(EdgeType))
 	if err != nil {return nil, err}
-	edge := &EdgeLevigo{&ElementLevigo{db, id, EdgeType}, outvertex, invertex, label}
+	edge := &EdgeLevigo{&AtomLevigo{db, id, EdgeType}, outvertex, invertex, label}
 
 	labelbyte := []byte(label)
 
@@ -465,9 +465,9 @@ func (db *GraphLevigo) AddEdge(id []byte, outvertex *VertexLevigo, invertex *Ver
 	return edge, nil
 }
 
-func joinBytes(sep []byte, elements ...[]byte) ([]byte) {
-	if len(elements) < 1 { return []byte{} } 
-	return bytes.Join(elements, sep)
+func joinBytes(sep []byte, nodes ...[]byte) ([]byte) {
+	if len(nodes) < 1 { return []byte{} } 
+	return bytes.Join(nodes, sep)
 }
 
 func (db *GraphLevigo) fromEdgeRecord(record []byte) (*VertexLevigo, *VertexLevigo, string) {
@@ -482,10 +482,10 @@ func (db *GraphLevigo) fromEdgeRecord(record []byte) (*VertexLevigo, *VertexLevi
 
 func (db *GraphLevigo) Edge(id []byte) *EdgeLevigo {
 	if id == nil {return nil }
-	val,err := db.elements.Get(db.ro, id)
+	val,err := db.nodes.Get(db.ro, id)
 	if err != nil {return nil}
 	if val == nil {return nil}
-	if ElementType(val) != EdgeType {return nil}
+	if NodeType(val) != EdgeType {return nil}
 
 	prefix := joinBytes(db.recsep, []byte(PSO), id)
 	ro := levigo.NewReadOptions()
@@ -496,9 +496,9 @@ func (db *GraphLevigo) Edge(id []byte) *EdgeLevigo {
 	it.Seek(prefix)
 	if it.Valid() && bytes.HasPrefix(it.Key(), prefix) {
 		outvertexid, invertexid, eid, _  := idsFromHexaKey(db.recsep, it.Key())
-		outvertex := &VertexLevigo{&ElementLevigo{db, outvertexid, VertexType}}
-		invertex := &VertexLevigo{&ElementLevigo{db, invertexid, VertexType}}
-		edge := &EdgeLevigo{&ElementLevigo{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
+		outvertex := &VertexLevigo{&AtomLevigo{db, outvertexid, VertexType}}
+		invertex := &VertexLevigo{&AtomLevigo{db, invertexid, VertexType}}
+		edge := &EdgeLevigo{&AtomLevigo{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
 		return edge
 	} else {
 		return nil
@@ -513,10 +513,10 @@ func (db *GraphLevigo) DelEdge(edge *EdgeLevigo) error {
 
 func (db *GraphLevigo) delEdge(edge *EdgeLevigo) error {
 	if edge == nil {	return NilValue }
-	if edge.ElementLevigo == nil { return NilValue }
+	if edge.AtomLevigo == nil { return NilValue }
 	id := edge.Id()
 	if id == nil {	return NilValue }
-	val,err := db.elements.Get(db.ro, id)
+	val,err := db.nodes.Get(db.ro, id)
 	if err != nil {return err}
 	if val == nil {return KeyDoesNotExist}
 
@@ -558,7 +558,7 @@ func (db *GraphLevigo) delEdge(edge *EdgeLevigo) error {
 	if err != nil {return err}
 
 	// now delete the edge
-	err = db.elements.Delete(db.wo, id)
+	err = db.nodes.Delete(db.wo, id)
 	if err != nil {return err}
 	
 	db.keepcount(EdgeType, -1)
@@ -580,9 +580,9 @@ func (db *GraphLevigo) Edges() []*EdgeLevigo {
 
 	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
 		outvertexid, invertexid, eid, _  := idsFromHexaKey(db.recsep, it.Key())
-		outvertex := &VertexLevigo{&ElementLevigo{db, outvertexid, VertexType}}
-		invertex := &VertexLevigo{&ElementLevigo{db, invertexid, VertexType}}
-		edge := &EdgeLevigo{&ElementLevigo{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
+		outvertex := &VertexLevigo{&AtomLevigo{db, outvertexid, VertexType}}
+		invertex := &VertexLevigo{&AtomLevigo{db, invertexid, VertexType}}
+		edge := &EdgeLevigo{&AtomLevigo{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
 		edges = append(edges, edge)
 	}
 
@@ -606,28 +606,28 @@ func (db *GraphLevigo) getPropKey(id []byte, prop string) ([]byte) {
 	return key
 }
 
-func (db *GraphLevigo) ElementProperty(element *ElementLevigo, prop string) ([]byte) {
-	if prop == "" || element == nil || element.id == nil { return nil }
-	key := db.getPropKey(element.id, prop)
+func (db *GraphLevigo) ElementProperty(node *AtomLevigo, prop string) ([]byte) {
+	if prop == "" || node == nil || node.id == nil { return nil }
+	key := db.getPropKey(node.id, prop)
 	val, err := db.props.Get(db.ro, key)
 	if err != nil {return nil}
 	return val
 }
 
-func (db *GraphLevigo) ElementSetProperty(element *ElementLevigo, prop string, value []byte) (error){
+func (db *GraphLevigo) ElementSetProperty(node *AtomLevigo, prop string, value []byte) (error){
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
-	if prop == "" || element == nil || element.id == nil { return nil }
-	key := db.getPropKey(element.id, prop)
+	if prop == "" || node == nil || node.id == nil { return nil }
+	key := db.getPropKey(node.id, prop)
 	err := db.props.Put(db.wo, key, value)
 	return err
 }
 
-func (db *GraphLevigo) ElementDelProperty(element *ElementLevigo, prop string) ([]byte) {
+func (db *GraphLevigo) ElementDelProperty(node *AtomLevigo, prop string) ([]byte) {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
-	if prop == "" || element == nil || element.id == nil { return nil }
-	key := db.getPropKey(element.id, prop)
+	if prop == "" || node == nil || node.id == nil { return nil }
+	key := db.getPropKey(node.id, prop)
 	val, err := db.props.Get(db.ro, key)
 	if err != nil {return nil}
 	err = db.props.Delete(db.wo, key)
@@ -635,14 +635,14 @@ func (db *GraphLevigo) ElementDelProperty(element *ElementLevigo, prop string) (
 	return val
 }
 
-func (db *GraphLevigo) ElementPropertyKeys(element *ElementLevigo) ([]string) {
+func (db *GraphLevigo) ElementPropertyKeys(node *AtomLevigo) ([]string) {
 	propkeys := []string{}
 	ro := levigo.NewReadOptions()
 	ro.SetFillCache(false)
 	it := db.props.NewIterator(ro)
 	defer it.Close()
 	defer ro.Close()
-	prefix := append(element.id, db.recsep...)
+	prefix := append(node.id, db.recsep...)
 	it.Seek(prefix)
 	var prop []byte
 	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {

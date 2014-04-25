@@ -7,7 +7,7 @@ import (
 )
 
 type EdgeLevigo struct {
-	*ElementLevigo
+	*AtomLevigo
 	subject *VertexLevigo
 	object *VertexLevigo
 	label string

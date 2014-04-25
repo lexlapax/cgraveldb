@@ -10,6 +10,11 @@ import (
 	//"github.com/jmhodges/levigo"
 	//"github.com/lexlapax/graveldb/core"	
 )
+var (
+	dbdir = "./testing.db"
+)
+
+
 
 func TestGraphOpenGraph(t *testing.T){
 	//t.Skip()
@@ -23,7 +28,7 @@ func TestGraphOpenGraph(t *testing.T){
 		if dbdir != gdb.dbdir { t.Error("dbdir not equal")}
 		if reflect.TypeOf(gdb.meta).String() != "*levigo.DB" { t.Error("gdb not valid type")}
 		if gdb.meta == nil { t.Error("meta is nil") }
-		if gdb.elements == nil { t.Error("elements is nil") }
+		if gdb.nodes == nil { t.Error("nodes is nil") }
 		if gdb.hexaindex == nil { t.Error("hexaindex is nil") }
 		if gdb.props == nil { t.Error("props is nil") }
 		if bytes.Compare(gdb.recsep, []byte("\x1f")) != 0 { t.Error("recsep does not match") }
@@ -52,7 +57,7 @@ func TestGraphVertexAdd(t *testing.T) {
 	vertex, err = gdb.AddVertex(id)
 	if assert.True(t, vertex != nil) {
 		assert.Equal(t, id, vertex.Id())
-		assert.Equal(t, VertexType, vertex.Elementtype)
+		assert.Equal(t, VertexType, vertex.nodeType)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, "<VertexLevigo:somerandomstringid@#GraphLevigo:dbdir=./testing.db#>", vertex.String())
 	}
@@ -109,10 +114,10 @@ func TestGraphVertexDel(t *testing.T) {
 	err = gdb.DelVertex(new(VertexLevigo))
 	assert.Equal(t, NilValue, err)
 
-	vertexnull := &VertexLevigo{new(ElementLevigo)}
+	vertexnull := &VertexLevigo{new(AtomLevigo)}
 	vertexnull.db = gdb 
 	vertexnull.id = ida 
-	vertexnull.Elementtype = VertexType
+	vertexnull.nodeType = VertexType
 	err = gdb.DelVertex(vertexnull)
 	assert.Equal(t, KeyDoesNotExist, err)
 	vertexa, _ := gdb.AddVertex(ida)
@@ -215,7 +220,7 @@ func TestGraphEdgeAdd(t *testing.T) {
 
 	if assert.True(t, edge1 != nil) {
 		assert.Equal(t, eid1, edge1.Id())
-		assert.Equal(t, EdgeType, edge1.Elementtype)
+		assert.Equal(t, EdgeType, edge1.nodeType)
 		assert.Equal(t, nil, err)
 		assert.Equal(t, "<EdgeLevigo:thisisedge1,s=thisisvertex1,o=thisisvertex2,l=edgeforward@#GraphLevigo:dbdir=./testing.db#>", edge1.String())
 		assert.Equal(t, vertex1, edge1.VertexOut())
@@ -270,10 +275,10 @@ func TestGraphEdgeDel(t *testing.T) {
 	assert.Equal(t, NilValue, err)
 
 
-	edgenull := &EdgeLevigo{new(ElementLevigo),nil,nil,""}
+	edgenull := &EdgeLevigo{new(AtomLevigo),nil,nil,""}
 	edgenull.db = gdb 
 	edgenull.id = eid1 
-	edgenull.Elementtype = EdgeType
+	edgenull.nodeType = EdgeType
 	err = gdb.DelEdge(edgenull)
 	assert.Equal(t, KeyDoesNotExist, err)
 
