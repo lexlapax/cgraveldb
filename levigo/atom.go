@@ -1,4 +1,4 @@
-package levelgraph
+package levigo
 
 
 import (
