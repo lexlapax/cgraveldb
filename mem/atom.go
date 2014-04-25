@@ -3,6 +3,7 @@ package mem
 import (
 		//"github.com/lexlapax/graveldb/core"
 		"sync"
+		"sort"
 )
 
 type NodeType string
@@ -62,5 +63,6 @@ func (atom *AtomMem) PropertyKeys() ([]string, error) {
 	for k := range atom.props {
 		keys = append(keys, k)
 	}
+	sort.Strings(keys)
 	return keys, nil
 }

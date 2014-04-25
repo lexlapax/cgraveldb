@@ -68,3 +68,9 @@ func TestGraphSetProperties(t *testing.T) {
             edge.SetProperty("key", []byte("value"))
     }
 }
+
+func TestNodesWithKeyValue(t *testing.T) {
+	t.Skip()
+	//todo
+}
+

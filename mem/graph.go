@@ -33,6 +33,7 @@ func NewGraphMem() core.Graph {
 	return graph
 }
 
+
 type GraphMem struct {
 	vertices map[string]*VertexMem 
 	edges map[string]*EdgeMem
@@ -40,6 +41,11 @@ type GraphMem struct {
 	edgelock *sync.RWMutex
 	nextid uint64
 	isopen bool 
+	caps *graphCaps
+}
+
+func (graph *GraphMem) Capabilities() core.GraphCaps {
+	return graph.caps
 }
 
 func (graph *GraphMem) AddVertex(id []byte) (core.Vertex, error) {
@@ -173,6 +179,7 @@ func (graph *GraphMem) Open(args ...interface{}) error {
 	graph.vertexlock = &sync.RWMutex{}
 	graph.edgelock = &sync.RWMutex{}
 	graph.isopen = true
+	graph.caps = new(graphCaps)
 	return nil
 }
 
@@ -183,6 +190,13 @@ func (graph *GraphMem) Close() error {
 	graph.edgelock = nil
 	graph.nextid = 1
 	graph.isopen = false
+	return nil
+}
+
+func (graph *GraphMem) Clear() error {
+	for _, v := range graph.vertices {
+		graph.DelVertex(v)
+	}
 	return nil
 }
 

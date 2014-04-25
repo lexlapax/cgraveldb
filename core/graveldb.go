@@ -11,6 +11,11 @@ const (
 	DirIn = 2
 )
 
+type GraphCaps interface {
+	Persistent() bool
+	SortedKeys() bool
+}
+
 type Atom interface {
 	Id() []byte
 	Property(prop string) ([]byte, error)
@@ -41,6 +46,7 @@ type Vertex interface {
 
 // todo add channel interfaces for iteration
 type Graph interface {
+	Capabilities() GraphCaps
 	AddVertex(id []byte) (Vertex, error)
 	Vertex(id []byte) (Vertex, error)
 	DelVertex(vertex Vertex) error
@@ -54,4 +60,5 @@ type Graph interface {
 	IsOpen() bool
 	Open(args ...interface{}) error
 	Close() error
+	Clear() error
 }
