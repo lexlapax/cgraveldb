@@ -1,23 +1,22 @@
-package mem
+package core
 
 import (
-		"github.com/lexlapax/graveldb/core"
 		"sync"
 		"sort"
 )
 
-type edgeSet struct {
-	atommap map[string]core.Edge
+type EdgeSet struct {
+	atommap map[string]Edge
 	sync.RWMutex
 }
 
-func newEdgeSet() *edgeSet {
-	set := new(edgeSet)
-	set.atommap = make(map[string]core.Edge)
+func NewEdgeSet() *EdgeSet {
+	set := new(EdgeSet)
+	set.atommap = make(map[string]Edge)
 	return set
 }
 
-func (set *edgeSet) add(edge core.Edge) {
+func (set *EdgeSet) Add(edge Edge) {
 	if edge == nil || edge.Id() == nil { return }
 	id := string(edge.Id()[:])
 	set.Lock()
@@ -30,7 +29,7 @@ func (set *edgeSet) add(edge core.Edge) {
 	return
 }
 
-func (set *edgeSet) del(edge core.Edge) {
+func (set *EdgeSet) Del(edge Edge) {
 	if edge == nil || edge.Id() == nil { return }
 	id := string(edge.Id()[:])
 	set.Lock()
@@ -39,7 +38,7 @@ func (set *edgeSet) del(edge core.Edge) {
 	return
 }
 
-func (set *edgeSet) exists(edge core.Edge) bool {
+func (set *EdgeSet) Contains(edge Edge) bool {
 	if edge == nil || edge.Id() == nil { return false}
 	if _, ok := set.atommap[string(edge.Id()[:])]; ok {
 		return true
@@ -47,8 +46,8 @@ func (set *edgeSet) exists(edge core.Edge) bool {
 	return false
 }
 
-func (set *edgeSet) members() []core.Edge {
-	atoms := []core.Edge{}
+func (set *EdgeSet) Members() []Edge {
+	atoms := []Edge{}
 	keys := []string{}
 	set.RLock()
 	defer set.RUnlock()
@@ -62,8 +61,24 @@ func (set *edgeSet) members() []core.Edge {
 	return atoms
 }
 
-func (set *edgeSet) count() int {
+func (set *EdgeSet) Count() int {
 	set.RLock()
 	defer set.RUnlock()
 	return len(set.atommap)
+}
+
+func (set *EdgeSet) Equal(other *EdgeSet) bool {
+
+	if set.Count() != other.Count() {
+		return false
+	}
+	set.RLock()
+	defer set.RUnlock()
+
+	for _, elem := range set.atommap {
+		if !other.Contains(elem) {
+			return false
+		}
+	}
+	return true
 }

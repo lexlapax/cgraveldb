@@ -104,6 +104,9 @@ func (graph *GraphMem) Vertices() ([]core.Vertex, error) {
 }
 
 func (graph *GraphMem) AddEdge(id []byte, outvertex core.Vertex, invertex core.Vertex, label string) (core.Edge, error) {
+	if outvertex == nil || invertex == nil || outvertex.Id() == nil || invertex.Id() == nil {
+		return nil, core.ErrNilValue
+	}
 	var idstr []byte
 	if id == nil {
 		idstr = graph.generateId()

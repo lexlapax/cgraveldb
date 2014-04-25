@@ -10,13 +10,13 @@ type VertexMem struct {
 	*AtomMem
 	// outedges map[string]mapset.Set
 	// inedges map[string]mapset.Set
-	outedges map[string]*edgeSet
-	inedges map[string]*edgeSet
+	outedges map[string]*core.EdgeSet
+	inedges map[string]*core.EdgeSet
 }
 
 func NewVertexMem(db *GraphMem, id []byte) *VertexMem {
 	//vertex := &VertexMem{NewAtomMem(db, id, VertexType), make(map[string]mapset.Set), make(map[string]mapset.Set)}
-	vertex := &VertexMem{NewAtomMem(db, id, VertexType), make(map[string]*edgeSet), make(map[string]*edgeSet)}
+	vertex := &VertexMem{NewAtomMem(db, id, VertexType), make(map[string]*core.EdgeSet), make(map[string]*core.EdgeSet)}
 	return vertex
 }
 
@@ -56,15 +56,15 @@ func (vertex *VertexMem) OutEdges(labels ...string) ([]core.Edge, error) {
 	totaledges := []core.Edge{}
 	if len(labels) == 0 {
 		for _, edgeset := range vertex.outedges {
-			if edgeset != nil && edgeset.count() > 0 {
-				totaledges = append(totaledges, edgeset.members()...)
+			if edgeset != nil && edgeset.Count() > 0 {
+				totaledges = append(totaledges, edgeset.Members()...)
 			}
 		}
 	} else {
 		for _, label := range labels {
 			if edgeset, ok := vertex.outedges[label]; ok {
-				if edgeset != nil && edgeset.count() > 0 {
-					totaledges = append(totaledges, edgeset.members()...)
+				if edgeset != nil && edgeset.Count() > 0 {
+					totaledges = append(totaledges, edgeset.Members()...)
 				}
 			}
 		}
@@ -78,15 +78,15 @@ func (vertex *VertexMem) InEdges(labels ...string) ([]core.Edge, error) {
 	totaledges := []core.Edge{}
 	if len(labels) == 0 {
 		for _, edgeset := range vertex.inedges {
-			if edgeset != nil && edgeset.count() > 0 {
-				totaledges = append(totaledges, edgeset.members()...)
+			if edgeset != nil && edgeset.Count() > 0 {
+				totaledges = append(totaledges, edgeset.Members()...)
 			}
 		}
 	} else {
 		for _, label := range labels {
 			if edgeset, ok := vertex.inedges[label]; ok {
-				if edgeset != nil && edgeset.count() > 0 {
-					totaledges = append(totaledges, edgeset.members()...)
+				if edgeset != nil && edgeset.Count() > 0 {
+					totaledges = append(totaledges, edgeset.Members()...)
 				}
 			}
 		}
@@ -103,35 +103,35 @@ func (vertex *VertexMem) AddEdge(id []byte, invertex core.Vertex, label string) 
 func (vertex *VertexMem) addOutEdge(edge core.Edge) {
 	edges := vertex.outedges[edge.Label()]
 	if edges == nil {
-		edges = newEdgeSet()
+		edges = core.NewEdgeSet()
 	}
-	edges.add(edge)
+	edges.Add(edge)
 	vertex.outedges[edge.Label()] = edges
 }
 
 func (vertex *VertexMem) addInEdge(edge core.Edge) {
 	edges := vertex.inedges[edge.Label()]
 	if edges == nil {
-		edges = newEdgeSet()
+		edges = core.NewEdgeSet()
 	}
-	edges.add(edge)
+	edges.Add(edge)
 	vertex.inedges[edge.Label()] = edges
 }
 
 func (vertex *VertexMem) delOutEdge(edge core.Edge) {
 	edges := vertex.outedges[edge.Label()]
 	if edges == nil {
-		edges = newEdgeSet()
+		edges = core.NewEdgeSet()
 	}
-	edges.del(edge)
+	edges.Del(edge)
 	vertex.outedges[edge.Label()] = edges
 }
 
 func (vertex *VertexMem) delInEdge(edge core.Edge) {
 	edges := vertex.inedges[edge.Label()]
 	if edges == nil {
-		edges = newEdgeSet()
+		edges = core.NewEdgeSet()
 	}
-	edges.del(edge)
+	edges.Del(edge)
 	vertex.inedges[edge.Label()] = edges
 }

@@ -190,22 +190,22 @@ func TestGraphVertexDel(t *testing.T) {
 	assert.True(t, err == nil)
 }
 
-/*
 
 func TestGraphVertexCount(t *testing.T) {
 	//t.Skip()
-	graph,_ := OpenGraph(dbdir)
+	graph := core.GetGraph(graphimp)
+	graph.Open()
 	graph.Clear()
 	defer graph.Close()
 
-	assert.Equal(t, uint64(0), graph.VertexCount())
+	assert.Equal(t, uint(0), graph.VertexCount())
 
 	ida := []byte("somerandomstringid")
 	vertexa,_ := graph.AddVertex(ida)
-	assert.Equal(t, uint64(1), graph.VertexCount())
+	assert.Equal(t, uint(1), graph.VertexCount())
 
-	testvertii := []*VertexLevigo{}
-	var vertex *VertexLevigo
+	testvertii := []core.Vertex{}
+	var vertex core.Vertex
 	alpha := []string{"a","b","c","d","e"}
 	numb := []string{"1","2","3","4","5"}
 	for _,a := range alpha {
@@ -215,28 +215,29 @@ func TestGraphVertexCount(t *testing.T) {
 		}
 	}
 	numv := len(testvertii)
-	assert.Equal(t, uint64(numv + 1), graph.VertexCount())
+	assert.Equal(t, uint(numv + 1), graph.VertexCount())
 	graph.DelVertex(vertexa)
-	assert.Equal(t, uint64(numv), graph.VertexCount())
+	assert.Equal(t, uint(numv), graph.VertexCount())
 	for i :=0; i < numv; i++ {
 		graph.DelVertex(testvertii[i])
-		assert.Equal(t, uint64(numv - (i + 1)), graph.VertexCount() )
+		assert.Equal(t, uint(numv - (i + 1)), graph.VertexCount() )
 	}
-	assert.Equal(t, uint64(0), graph.VertexCount())
+	assert.Equal(t, uint(0), graph.VertexCount())
 }
 
 
 func TestGraphVertexGetAll(t *testing.T) {
 	//t.Skip()
-	graph,_ := OpenGraph(dbdir)
+	graph := core.GetGraph(graphimp)
+	graph.Open()
 	graph.Clear()
 	defer graph.Close()
 
 	ida := []byte("somerandomstringid")
-	testvertii := []*VertexLevigo{}
-	var vertex *VertexLevigo
+	testvertii := []core.Vertex{}
+	var vertex core.Vertex
 
-	assert.True(t, len(graph.Vertices()) == 0)
+	assert.True(t, graph.VertexCount() == uint(0))
 
 	alpha := []string{"a","b","c","d","e"}
 	numb := []string{"1","2","3","4","5"}
@@ -246,17 +247,25 @@ func TestGraphVertexGetAll(t *testing.T) {
 			testvertii = append(testvertii, vertex)
 		}
 	}
-	assert.Equal(t, testvertii, graph.Vertices())
-	lastvertex, _ := graph.AddVertex(ida)
-	assert.NotEqual(t, testvertii, graph.Vertices())
-	//keys are lexicaly ordered.. lastvertex should be the last in the list
-	testvertii = graph.Vertices()
-	assert.Equal(t, lastvertex, testvertii[len(testvertii) - 1])
+	verticesget,_  := graph.Vertices()
+	assert.Equal(t, len(testvertii), len(verticesget))
+	// assert.Equal(t, testvertii, verticesget)
+	graph.AddVertex(ida)
+	verticesget,_  = graph.Vertices()
+	// assert.NotEqual(t, testvertii, verticesget)
+
+	assert.Equal(t, len(testvertii) + 1, len(verticesget))
+
+	// //keys are lexicaly ordered.. lastvertex should be the last in the list
+	// verticesget = graph.Vertices()
+	// assert.Equal(t, lastvertex, verticesget[len(verticesget) - 1])
 }
+
 
 func TestGraphEdgeAdd(t *testing.T) {
 	//t.Skip()
-	graph,_ := OpenGraph(dbdir)
+	graph := core.GetGraph(graphimp)
+	graph.Open()
 	graph.Clear()
 	defer graph.Close()
 
@@ -267,64 +276,71 @@ func TestGraphEdgeAdd(t *testing.T) {
 	vertex2,_ := graph.AddVertex(vid2)
 	//fmt.Printf("v=%v\n",vertex2)
 
-	edge1, err := graph.AddEdge(nil,vertex1,vertex2,"edgeforward")
-	assert.True(t, edge1 == nil)
-	assert.Equal(t, NilValue, err)
+	// edge1, err := graph.AddEdge(nil,vertex1,vertex2,"edgeforward")
+	// assert.True(t, edge1 != nil)
 
-	edge1, err = graph.AddEdge(eid1,nil,vertex2,"edgeforward")
+	edge1, err := graph.AddEdge(eid1,nil,vertex2,"edgeforward")
 	assert.True(t, edge1 == nil)
-	assert.Equal(t, NilValue, err)
+	assert.Equal(t, core.ErrNilValue, err)
 
 	edge1, err = graph.AddEdge(eid1,vertex1,nil,"edgeforward")
 	assert.True(t, edge1 == nil)
-	assert.Equal(t, NilValue, err)
+	assert.Equal(t, core.ErrNilValue, err)
 
 	edge1, err = graph.AddEdge(eid1, vertex1, vertex2, "edgeforward")
 
 	if assert.True(t, edge1 != nil) {
 		assert.Equal(t, eid1, edge1.Id())
-		assert.Equal(t, EdgeType, edge1.Elementtype)
 		assert.Equal(t, nil, err)
-		assert.Equal(t, "<EdgeLevigo:thisisedge1,s=thisisvertex1,o=thisisvertex2,l=edgeforward@#GraphLevigo:dbdir=./testing.db#>", edge1.String())
-		assert.Equal(t, vertex1, edge1.VertexOut())
-		assert.Equal(t, vertex2, edge1.VertexIn())
+		testvertex,_ :=  edge1.VertexOut()
+		assert.Equal(t, vertex1, testvertex)
+		testvertex,_ =  edge1.VertexIn()
+		assert.Equal(t, vertex2, testvertex)
 		assert.Equal(t, "edgeforward", edge1.Label())
 	}
 
 	edge2, errb := graph.AddEdge(eid1, vertex1, vertex2, "edgeforward")
 	assert.True(t, edge2 == nil)
-	assert.Equal(t, KeyExists, errb )
+	assert.Equal(t, core.ErrAlreadyExists, errb )
 }
+
 
 func TestGraphEdgeGet(t *testing.T) {
 	//t.Skip()
-	graph,_ := OpenGraph(dbdir)
+	graph := core.GetGraph(graphimp)
+	graph.Open()
 	graph.Clear()
 	defer graph.Close()
 
 	vid1 := []byte("thisisvertex1")
 	vid2 := []byte("thisisvertex2")
 	eid1 := []byte("thisisedge1")
-	assert.True(t, graph.Edge(eid1) == nil)
+	edge1, _ := graph.Edge(eid1)
+	assert.True(t, edge1 == nil)
 
 	vertex1,_ := graph.AddVertex(vid1)
 	vertex2,_ := graph.AddVertex(vid2)
-	edge1, _ := graph.AddEdge(eid1, vertex1, vertex2, "edgeforward")
-	edge1a := graph.Edge(eid1)
+	edge1, _ = graph.AddEdge(eid1, vertex1, vertex2, "edgeforward")
+	edge1a,_ := graph.Edge(eid1)
 	assert.Equal(t, edge1, edge1a)
 
 	//allow duplicates 
 	eid2 := []byte("thisisedge2")
 	edge2, _ := graph.AddEdge(eid2, vertex1, vertex2, "edgeforward")
 	assert.Equal(t, eid2, edge2.Id())
-	assert.Equal(t, vertex1, edge1.VertexOut())
-	assert.Equal(t, vertex2, edge1.VertexIn())
+	testvertex,_ := edge1.VertexOut()
+	assert.Equal(t, vertex1, testvertex)
+	testvertex,_ = edge1.VertexIn()
+	assert.Equal(t, vertex2, testvertex)
 	assert.Equal(t, "edgeforward", edge1.Label())
+	assert.Equal(t, "edgeforward", edge2.Label())
 }
+
 
 func TestGraphEdgeDel(t *testing.T) {
 	//t.Skip()
-	graph,_ := OpenGraph(dbdir)
+	graph := core.GetGraph(graphimp)
+	graph.Open()
 	graph.Clear()
 	defer graph.Close()
 
@@ -333,17 +349,7 @@ func TestGraphEdgeDel(t *testing.T) {
 	eid1 := []byte("thisisedge1")
 
 	err := graph.DelEdge(nil)
-	assert.Equal(t, NilValue, err)
-	err = graph.DelEdge(new(EdgeLevigo))
-	assert.Equal(t, NilValue, err)
-
-
-	edgenull := &EdgeLevigo{new(ElementLevigo),nil,nil,""}
-	edgenull.db = graph 
-	edgenull.id = eid1 
-	edgenull.Elementtype = EdgeType
-	err = graph.DelEdge(edgenull)
-	assert.Equal(t, KeyDoesNotExist, err)
+	assert.Equal(t, core.ErrNilValue, err)
 
 	vertex1,_ := graph.AddVertex(vid1)
 	vertex2,_ := graph.AddVertex(vid2)
@@ -351,52 +357,20 @@ func TestGraphEdgeDel(t *testing.T) {
 
 	err = graph.DelEdge(edge1)
 	assert.True(t, err == nil)
-	assert.True(t, graph.Edge(eid1) == nil)
+	testedge,_ := graph.Edge(eid1)
+	assert.True(t,  testedge == nil)
 	err = graph.DelEdge(edge1)
-	assert.Equal(t, KeyDoesNotExist, err)
+	assert.Equal(t, core.ErrDoesntExist, err)
 }
-
-
-func TestGraphEdgeGetAll(t *testing.T) {
-	//t.Skip()
-	graph,_ := OpenGraph(dbdir)
-	graph.Clear()
-	defer graph.Close()
-
-	vid1 := []byte("thisisvertex1")
-	vid2 := []byte("thisisvertex2")
-	eid1 := []byte("thisisedge1")
-
-	vertex1,_ := graph.AddVertex(vid1)
-	vertex2,_ := graph.AddVertex(vid2)
-
-	assert.True(t, len(graph.Edges()) == 0)
-	testedges := []*EdgeLevigo{}
-	var edge *EdgeLevigo
-	alpha := []string{"a","b","c","d","e"}
-	numb := []string{"1","2","3","4","5"}
-	for _,a := range alpha {
-		for _,n := range numb { 
-			edge, _= graph.AddEdge([]byte(a + "-" + n), vertex1, vertex2, "somedge")
-			testedges = append(testedges, edge)
-		}
-	}
-	assert.Equal(t, testedges, graph.Edges())
-	lastedge, _ := graph.AddEdge(eid1, vertex1, vertex2, "edgeforward")
-	assert.NotEqual(t, testedges, graph.Edges())
-	//keys are lexicaly ordered.. lastedge should be the last in the list
-	testedges = graph.Edges()
-	assert.Equal(t, lastedge, testedges[len(testedges) - 1])
-}
-
 
 func TestGraphEdgeCount(t *testing.T) {
 	//t.Skip()
-	graph,_ := OpenGraph(dbdir)
+	graph := core.GetGraph(graphimp)
+	graph.Open()
 	graph.Clear()
 	defer graph.Close()
 
-	assert.Equal(t, uint64(0), graph.EdgeCount())
+	assert.Equal(t, uint(0), graph.EdgeCount())
 
 	vid1 := []byte("thisisvertex1")
 	vid2 := []byte("thisisvertex2")
@@ -406,10 +380,10 @@ func TestGraphEdgeCount(t *testing.T) {
 	vertex2,_ := graph.AddVertex(vid2)
 
 	edge1,_ := graph.AddEdge(eid1, vertex1, vertex2, "edgeforward")
-	assert.Equal(t, uint64(1), graph.EdgeCount())
+	assert.Equal(t, uint(1), graph.EdgeCount())
 
-	testedges := []*EdgeLevigo{}
-	var edge *EdgeLevigo
+	testedges := []core.Edge{}
+	var edge core.Edge
 	alpha := []string{"a","b","c","d","e"}
 	numb := []string{"1","2","3","4","5"}
 	for _,a := range alpha {
@@ -424,9 +398,43 @@ func TestGraphEdgeCount(t *testing.T) {
 	assert.Equal(t, uint64(numv), graph.EdgeCount())
 	for i :=0; i < numv; i++ {
 		graph.DelEdge(testedges[i])
-		assert.Equal(t, uint64(numv - (i + 1)), graph.EdgeCount() )
+		assert.Equal(t, uint(numv - (i + 1)), graph.EdgeCount() )
 	}
 	assert.Equal(t, uint64(0), graph.EdgeCount())
 }
 
-*/
+func TestGraphEdgeGetAll(t *testing.T) {
+	//t.Skip()
+	graph := core.GetGraph(graphimp)
+	graph.Open()
+	graph.Clear()
+	defer graph.Close()
+
+	vid1 := []byte("thisisvertex1")
+	vid2 := []byte("thisisvertex2")
+	eid1 := []byte("thisisedge1")
+
+	vertex1,_ := graph.AddVertex(vid1)
+	vertex2,_ := graph.AddVertex(vid2)
+
+	assert.True(t, graph.EdgeCount() == uint(0))
+	testedges := core.NewEdgeSet()
+	var edge core.Edge
+	alpha := []string{"a","b","c","d","e"}
+	numb := []string{"1","2","3","4","5"}
+	for _,a := range alpha {
+		for _,n := range numb { 
+			edge, _= graph.AddEdge([]byte(a + "-" + n), vertex1, vertex2, "somedge")
+			testedges.Add(edge)
+		}
+	}
+	edges, _ := graph.Edges()
+	assert.Equal(t, testedges.Count(), len(edges))
+	for _,e := range edges {
+		assert.True(t, testedges.Contains(e))
+	}
+	graph.AddEdge(eid1, vertex1, vertex2, "edgeforward")
+	edges, _ = graph.Edges()
+	assert.Equal(t, testedges.Count() + 1, len(edges))
+}
+
