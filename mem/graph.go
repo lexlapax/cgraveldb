@@ -13,11 +13,13 @@ const (
 	)
 
 var (
-	ErrDoesntExist = errors.New("the object with the id does not exist")
-	ErrAlreadyExists = errors.New("the object with the id already exists")
-	ErrNilValue = errors.New("value passed cannot be nil")
+	// ErrDoesntExist = errors.New("the object with the id does not exist")
+	// ErrAlreadyExists = errors.New("the object with the id already exists")
+	// ErrNilValue = errors.New("value passed cannot be nil")
+	ErrDirAnyUnsupported = errors.New("Any Direction not supported")
 	register sync.Once
 )
+
 
 func Register() {
 	register.Do(func() {core.Register(GraphImpl, &GraphMem{})} )
@@ -49,6 +51,8 @@ func (graph *GraphMem) Capabilities() core.GraphCaps {
 }
 
 func (graph *GraphMem) AddVertex(id []byte) (core.Vertex, error) {
+	graph.vertexlock.Lock()
+	defer graph.vertexlock.Unlock()
 	var idstr []byte
 	if id == nil {
 		idstr = graph.generateId()
@@ -57,19 +61,17 @@ func (graph *GraphMem) AddVertex(id []byte) (core.Vertex, error) {
 		_, eok = graph.edges[string(id[:])]
 		_, vok = graph.vertices[string(id[:])]
 		if vok || eok {
-			return nil, ErrAlreadyExists
+			return nil, core.ErrAlreadyExists
 		}
 		idstr = id
 	}
-	graph.vertexlock.Lock()
-	defer graph.vertexlock.Unlock()
 	vertex := NewVertexMem(graph, idstr)
 	graph.vertices[string(idstr[:])] = vertex
 	return vertex, nil
 }
 
 func (graph *GraphMem) Vertex(id []byte) (core.Vertex, error) {
-	if id == nil { return nil, ErrNilValue}
+	if id == nil { return nil, core.ErrNilValue}
 	graph.vertexlock.RLock()
 	defer graph.vertexlock.RUnlock()
  	if val, ok := graph.vertices[string(id[:])]; ok {
@@ -79,7 +81,7 @@ func (graph *GraphMem) Vertex(id []byte) (core.Vertex, error) {
 }
 
 func (graph *GraphMem) DelVertex(vertex core.Vertex) error {
-	if vertex == nil { return ErrNilValue}
+	if vertex == nil { return core.ErrNilValue}
 	graph.vertexlock.Lock()
 	defer graph.vertexlock.Unlock()
 	edges, _ := vertex.Edges(core.DirAny)
@@ -110,7 +112,7 @@ func (graph *GraphMem) AddEdge(id []byte, outvertex core.Vertex, invertex core.V
 		_, eok = graph.edges[string(id[:])]
 		_, vok = graph.vertices[string(id[:])]
 		if vok || eok {
-			return nil, ErrAlreadyExists
+			return nil, core.ErrAlreadyExists
 		}
 		idstr = id
 	}
@@ -128,7 +130,7 @@ func (graph *GraphMem) AddEdge(id []byte, outvertex core.Vertex, invertex core.V
 }
 
 func (graph *GraphMem) Edge(id []byte) (core.Edge, error) {
-	if id == nil { return nil, ErrNilValue}
+	if id == nil { return nil, core.ErrNilValue}
 	graph.edgelock.RLock()
 	defer graph.edgelock.RUnlock()
  	if val, ok := graph.edges[string(id[:])]; ok {
@@ -138,9 +140,9 @@ func (graph *GraphMem) Edge(id []byte) (core.Edge, error) {
 }
 
 func (graph *GraphMem) DelEdge(edge core.Edge) error {
-	if edge == nil { return ErrNilValue}
+	if edge == nil { return core.ErrNilValue}
 	if _, ok := graph.edges[string(edge.Id()[:])]; !ok {
-		return 	ErrDoesntExist
+		return 	core.ErrDoesntExist
 	}
 	graph.edgelock.Lock()
 	defer graph.edgelock.Unlock()

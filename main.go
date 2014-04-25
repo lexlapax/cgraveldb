@@ -1,4 +1,10 @@
+/*
+nothing to see here
+these are just random go learnings
+*/
+
 package main
+
 import (
 	//"github.com/lexlapax/graveldb/levelgraph"
 	//"github.com/lexlapax/graveldb/core"
@@ -7,6 +13,7 @@ import (
 	"github.com/jmhodges/levigo"
 	"bytes"
 	"time"
+	"reflect"
 )
 
 func writeToDb(db *levigo.DB) {
@@ -128,7 +135,7 @@ func DbTest() {
 	//fmt.Println(string(getValueBytes[:]))
 	db.Close()
 }
-func testOutChannel(cs chan int) {
+func testWriteChannel(cs chan int) {
 	for i := 1; i <= 10; i+= 1 {
 		cs <- i
 		fmt.Printf("sent %v\n", i)
@@ -137,25 +144,38 @@ func testOutChannel(cs chan int) {
 }
 
 
-func iterEdgeSet(cs <-chan int, edges *[]int) {
+func testReadChannel(cs <-chan int, arr *[]int) {
 	for s:= range cs {
-		*edges = append(*edges, s)
+		*arr = append(*arr, s)
+		fmt.Printf("received = %v\n",s)
 	}
 }
 
-func testReadChannel(cs chan int) {
-	for i := range cs {
-		fmt.Printf("received = %v\n",i)
-	}
+
+func testChannel() {
+	cs := make(chan int)
+	intarr := []int{}
+	go testWriteChannel(cs)
+	go testReadChannel(cs, &intarr)
+	time.Sleep(1 * 1.e9)
+	fmt.Printf("%v\n", intarr)
+}
+
+func testReflect() {
+	a := []byte{}
+	b := "stringvalue"
+	c := 1
+	d := uint(1)
+	fmt.Printf("a: %v, %v\n", a, reflect.TypeOf(a))
+	fmt.Printf("b: %v, %v\n", b, reflect.TypeOf(b))
+	fmt.Printf("c: %v, %v\n", c, reflect.TypeOf(c))
+	fmt.Printf("d: %v, %v\n", d, reflect.TypeOf(d))
+	fmt.Printf("")
 }
 
 func main() {
-	cs := make(chan int)
-	edges := []int{}
-	go testOutChannel(cs)
-	go iterEdgeSet(cs, &edges)
-	time.Sleep(1 * 1.e9)
-	fmt.Printf("%v\n", edges)
+	// testChannel()
+	testReflect()
 }
 
 

@@ -2,11 +2,6 @@ package mem
 
 import (
 		"github.com/lexlapax/graveldb/core"
-		"errors"
-)
-
-var (
-	ErrDirAnyUnsupported = errors.New("Any Direction not supported")
 )
 
 type EdgeMem struct {
@@ -27,9 +22,9 @@ func (edge *EdgeMem) Label() string {
 
 func (edge *EdgeMem) Vertex(direction core.Direction) (core.Vertex, error) {
 	if direction == core.DirOut {
-		return edge.object, nil
-	} else if direction == core.DirIn {
 		return edge.subject, nil
+	} else if direction == core.DirIn {
+		return edge.object, nil
 	} else {
 		return nil, ErrDirAnyUnsupported
 	}

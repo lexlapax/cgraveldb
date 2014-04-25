@@ -1,7 +1,7 @@
 package core
 
 import (
-
+	"errors"
 )
 
 type Direction int
@@ -9,6 +9,12 @@ const (
 	DirAny Direction = 0
 	DirOut= 1
 	DirIn = 2
+)
+
+var (
+	ErrDoesntExist = errors.New("the object with the id does not exist")
+	ErrAlreadyExists = errors.New("the object with the id already exists")
+	ErrNilValue = errors.New("value passed cannot be nil")
 )
 
 type GraphCaps interface {
