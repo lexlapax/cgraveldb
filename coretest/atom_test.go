@@ -14,7 +14,7 @@ func init() {
 	mem.Register()
 }
 
-func TestElementProperty(t *testing.T){
+func TestAtomProperty(t *testing.T){
 	//t.Skip()
 	graph := core.GetGraph(graphimp)
 	graph.Open()
