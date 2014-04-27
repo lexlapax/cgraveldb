@@ -13,7 +13,7 @@ type EdgeTestSuite struct {
 }
 
 func (suite *EdgeTestSuite) SetupSuite() {
-    suite.TestGraph = core.GetGraph(graphimpl)
+    suite.TestGraph = core.GetGraph(GraphImpl)
 }
 
 func (suite *EdgeTestSuite) TearSuite() {

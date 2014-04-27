@@ -15,6 +15,7 @@ var (
 	ErrDoesntExist = errors.New("the object with the id does not exist")
 	ErrAlreadyExists = errors.New("the object with the id already exists")
 	ErrNilValue = errors.New("value passed cannot be nil")
+	ErrDirAnyUnsupported = errors.New("Any Direction not supported")
 )
 
 type GraphCaps interface {

@@ -3,7 +3,7 @@ package levigo
 
 import (
 		"fmt"
-		//"github.com/lexlapax/graveldb/core"
+		"github.com/lexlapax/graveldb/core"
 )
 
 type EdgeLevigo struct {
@@ -14,16 +14,27 @@ type EdgeLevigo struct {
 }
 
 
-func (edge *EdgeLevigo) Label() (string) {
+func (edge *EdgeLevigo) Label() string {
 	return edge.label
 }
 
-func (edge *EdgeLevigo) VertexOut() (*VertexLevigo) {
-	return edge.subject
+func (edge *EdgeLevigo) Vertex(direction core.Direction) (core.Vertex, error) {
+	if direction == core.DirOut {
+		return edge.subject, nil
+	} else if direction == core.DirIn {
+		return edge.object, nil
+	} else {
+		return nil, core.ErrDirAnyUnsupported
+	}
 }
 
-func (edge *EdgeLevigo) VertexIn() (*VertexLevigo) {
-	return edge.object
+
+func (edge *EdgeLevigo) VertexOut() (core.Vertex, error) {
+	return edge.subject, nil
+}
+
+func (edge *EdgeLevigo) VertexIn() (core.Vertex, error) {
+	return edge.object, nil
 }
 
 func (edge *EdgeLevigo) String() (string) {
@@ -31,3 +42,4 @@ func (edge *EdgeLevigo) String() (string) {
 		edge.subject.IdAsString(),edge.object.IdAsString(),edge.label,edge.db)
 	return str
 }
+

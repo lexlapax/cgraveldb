@@ -12,7 +12,7 @@ type AtomTestSuite struct {
 }
 
 func (suite *AtomTestSuite) SetupSuite() {
-    suite.TestGraph = core.GetGraph(graphimpl)
+    suite.TestGraph = core.GetGraph(GraphImpl)
 }
 
 func (suite *AtomTestSuite) TearSuite() {

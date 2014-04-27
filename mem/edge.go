@@ -26,7 +26,7 @@ func (edge *EdgeMem) Vertex(direction core.Direction) (core.Vertex, error) {
 	} else if direction == core.DirIn {
 		return edge.object, nil
 	} else {
-		return nil, ErrDirAnyUnsupported
+		return nil, core.ErrDirAnyUnsupported
 	}
 }
 

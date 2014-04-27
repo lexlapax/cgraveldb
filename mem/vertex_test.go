@@ -12,7 +12,7 @@ type VertexTestSuite struct {
 }
 
 func (suite *VertexTestSuite) SetupSuite() {
-    suite.TestGraph = core.GetGraph(graphimpl)
+    suite.TestGraph = core.GetGraph(GraphImpl)
 }
 
 func (suite *VertexTestSuite) TearSuite() {

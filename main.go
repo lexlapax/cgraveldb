@@ -14,6 +14,8 @@ import (
 	"bytes"
 	"time"
 	"reflect"
+	"strconv"
+	"encoding/binary"
 )
 
 func writeToDb(db *levigo.DB) {
@@ -32,6 +34,7 @@ func writeToDb(db *levigo.DB) {
 		}
 	}
 }
+
 
 func readFromDb(db *levigo.DB){
 	ro := levigo.NewReadOptions()
@@ -173,9 +176,80 @@ func testReflect() {
 	fmt.Printf("")
 }
 
+func testInterfaceArgs(args ...interface{}) {
+	if len(args) > 0 {
+		if aString, found := args[0].(string); found {
+			if aString == "" {
+				fmt.Printf("NoDirectory = %v\n", aString)
+			} else {
+				fmt.Printf("all good = %v\n", aString)
+			}
+		} else {
+			fmt.Printf("InvalidParameterValue = %v\n", args[0])
+		}
+	}
+}
+func testVariadicArgs() {
+	testInterfaceArgs(1)
+	testInterfaceArgs(nil)
+	testInterfaceArgs("")
+	testInterfaceArgs("hello")
+}
+
+var testcounter = []byte{}
+
+func incrByte(testcounter []byte) []byte {
+	var intcounter uint64
+	if testcounter == nil {
+		intcounter = uint64(0)
+	} else {
+		intcounter, _ = binary.Uvarint(testcounter)
+	}
+	intcounter++ 
+	bufsize := binary.Size(intcounter)
+	testcounter = make([]byte, bufsize)
+	binary.PutUvarint(testcounter, intcounter)
+	return testcounter
+}
+
+func incrIntStr(counter string) string {
+	var intcounter uint64
+	var err error
+	if counter == "" {
+		intcounter = uint64(0)
+	} else {
+		intcounter, err = strconv.ParseUint(counter, 16, 64)
+		if err != nil {intcounter = uint64(0)}
+	}
+	intcounter++
+	retstr := strconv.FormatUint(intcounter, 16)
+	return retstr
+}
+
+var lastidbyte = []byte(strconv.FormatUint(uint64(89891), 16))
+func testStrconv() {
+	if lastidbyte == nil { 
+		lastidbyte = []byte(strconv.FormatUint(uint64(0), 16)) 
+	}
+	lastidstr := string(lastidbyte[:])
+	intcounter, _ := strconv.ParseUint(lastidstr, 16, 64)
+	intcounter++ 
+	nextidstr := strconv.FormatUint(intcounter, 16)
+
+	lastidbyte = []byte(nextidstr)
+
+	//strconv.FormatUint(lastid, 16)
+	lastid, _ := strconv.ParseUint(lastidstr, 16, 64)
+	
+	
+	nextid, _ := strconv.ParseUint(nextidstr, 16, 64)
+	//lastidstr := strconv.FormatUint(lastid, 16)
+	//nextid := lastid + 1
+	fmt.Printf("last=%v,lastint=%v,next=%v,nextint=%v\n",lastidstr, lastid, nextidstr, nextid)
+}
+
 func main() {
-	// testChannel()
-	testReflect()
+	testStrconv()
 }
 
 

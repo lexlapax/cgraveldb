@@ -8,17 +8,20 @@ import (
 		"os"
 		"sync"
 		"encoding/binary"
+		"strconv"
 		"github.com/jmhodges/levigo"
 		"path"
-		//"github.com/lexlapax/graveldb/core"
+		"github.com/lexlapax/graveldb/core"
 )
 
-// Errors in addition to IO errors.
+const (
+	GraphImpl                = "levigo"
+	)
+
+
+// vars Errors in addition to IO errors.
 var (
 	NoDirectory     = errors.New("need to pass a valid path for a db directory")
-	NilValue     = errors.New("nil value passed in argument")
-	KeyExists = errors.New("key exists in database")
-	KeyDoesNotExist = errors.New("key does not exist in database")
 	InvalidParameterValue = errors.New("the value of parameter passed is invalid")
 	DBNotOpen = errors.New("db is not open")
 	metadb = "meta.db"	
@@ -29,7 +32,18 @@ var (
 	propVertiiCount = "vertiicount"
 	propEdgeCount = "edgecount"
 	propRecSep = "recsep"
+	propNextId = "nextid"
+	register sync.Once
 )
+
+func Register() {
+	register.Do(func() {core.Register(GraphImpl, &GraphLevigo{})} )
+}
+
+func init() {
+	Register()
+}
+
 
 // * spo::A::C::B
 // * sop::A::B::C
@@ -67,8 +81,30 @@ type GraphLevigo struct {
 	ro *levigo.ReadOptions
 	wo *levigo.WriteOptions
 	recsep []byte
-	IsOpen bool
+	isopen bool
 	rwlock *sync.RWMutex
+	caps *graphCaps
+}
+
+func (db *GraphLevigo) nextId() []byte {
+	lastidbyte, _ := db.meta.Get(db.ro, []byte(propNextId))
+	if lastidbyte == nil { 
+		lastidbyte = []byte(strconv.FormatUint(uint64(0), 16)) 
+	}
+
+	for {
+		lastidstr := string(lastidbyte[:])
+		intcounter, _ := strconv.ParseUint(lastidstr, 16, 64)
+		intcounter++ 
+		nextidstr := strconv.FormatUint(intcounter, 16)
+		lastidbyte = []byte(nextidstr)
+		val, _ := db.nodes.Get(db.ro, lastidbyte)
+		if val == nil  {
+			break
+		}
+	}
+	db.meta.Put(db.wo, []byte(propNextId), lastidbyte)
+	return lastidbyte
 }
 
 func openMeta(dbdir string, ro *levigo.ReadOptions, wo *levigo.WriteOptions, opts *levigo.Options) (*levigo.DB, []byte, error) {
@@ -95,8 +131,26 @@ func openProps(dbdir string, opts *levigo.Options) (*levigo.DB, error) {
 	return levigo.Open(path.Join(dbdir, propdb), opts)
 }
 
-func (db *GraphLevigo) Open() (error) {
-	if db.IsOpen == true {return errors.New("db already open") }
+func (db *GraphLevigo) Capabilities() core.GraphCaps {
+	return db.caps
+}
+
+
+func (db *GraphLevigo) Open(args ...interface{}) error {
+	if db.isopen == true {return nil }//errors.New("db already open") }
+	if len(args) > 0 {
+		if aString, found := args[0].(string); found {
+			if aString == "" {
+				return NoDirectory
+			} else {
+				db.dbdir = aString
+			}
+		} else {
+			return InvalidParameterValue
+		}
+	}
+	if db.dbdir == "" { return NoDirectory }
+
 	err := os.MkdirAll(db.dbdir, 0755)
 	if err != nil { return err }
 
@@ -115,6 +169,7 @@ func (db *GraphLevigo) Open() (error) {
 	db.ro = levigo.NewReadOptions()
 	db.wo = levigo.NewWriteOptions()
 
+	db.caps = new(graphCaps)
 
 	db.meta, db.recsep, err = openMeta(db.dbdir, db.ro, db.wo, db.opts)
 	if err != nil {return err}
@@ -131,35 +186,33 @@ func (db *GraphLevigo) Open() (error) {
 
 	db.keepcount(VertexType, 0)
 	db.keepcount(EdgeType, 0)
-	db.IsOpen = true
+	db.isopen = true
 	return nil
 }
-
 
 func OpenGraph(dbdir string) (*GraphLevigo, error ) {
 	if dbdir == "" { return nil, NoDirectory }
 
 	db := new(GraphLevigo)
 	db.dbdir = dbdir
-	db.IsOpen = false
+	db.isopen = false
 
 	err := db.Open()
 	if err != nil {return nil, err }
 	return db, nil
 }
 
-func (db *GraphLevigo) Clear() (error) {
+func (db *GraphLevigo) Clear() error {
 	dbdir := db.dbdir
 	db.Close()
 	os.RemoveAll(dbdir)
 	return db.Open()
 }
 
-
-func (db *GraphLevigo) Close() (bool, error) {
+func (db *GraphLevigo) Close() error {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
-	db.IsOpen = false
+	db.isopen = false
 	db.meta.Close()
 	db.nodes.Close()
 	db.hexaindex.Close()
@@ -174,7 +227,12 @@ func (db *GraphLevigo) Close() (bool, error) {
 	db.opts = nil
 	db.ro = nil
 	db.wo = nil
-	return true, nil
+	return nil
+}
+
+
+func (db *GraphLevigo) IsOpen() bool {
+	return db.isopen
 }
 
 func (db *GraphLevigo) String() (string) {
@@ -183,14 +241,14 @@ func (db *GraphLevigo) String() (string) {
 }
 
 func(db *GraphLevigo) getDbProperty(prop string) ([]byte, error){
-	if prop == "" {return nil, NilValue}
+	if prop == "" {return nil, core.ErrNilValue}
 	val, err := db.meta.Get(db.ro, []byte(prop))
 	if err != nil {return nil, err}
 	return val, nil
 }
 
 func(db *GraphLevigo) putDbProperty(prop string, val []byte) ([]byte, error){
-	if prop == "" {return nil, NilValue}
+	if prop == "" {return nil, core.ErrNilValue}
 	key := []byte(prop)
 	oldval, err := db.meta.Get(db.ro, key)
 	if err != nil {return nil, err}
@@ -199,8 +257,8 @@ func(db *GraphLevigo) putDbProperty(prop string, val []byte) ([]byte, error){
 	return oldval, nil
 }
 
-func (db *GraphLevigo) keepcount(etype NodeType, upordown int) (uint64) {
-	var storedcount, returncount uint64
+func (db *GraphLevigo) keepcount(etype NodeType, upordown int) (uint) {
+	var storedcount, returncount uint
 	var key string
 	if etype == VertexType {
 		key = propVertiiCount
@@ -214,7 +272,8 @@ func (db *GraphLevigo) keepcount(etype NodeType, upordown int) (uint64) {
 		storedcount = 0
 		upordown = 0
 	} else {
-		storedcount, _ = binary.Uvarint(val)
+		tempint,_ := binary.Uvarint(val)
+		storedcount = uint(tempint)
 	}
 	switch upordown {
 		case -1:
@@ -225,67 +284,68 @@ func (db *GraphLevigo) keepcount(etype NodeType, upordown int) (uint64) {
 			returncount = storedcount
 	}
 	if returncount != storedcount || val == nil {
-		bufsize := binary.Size(returncount)
+		bufsize := binary.Size(uint64(0))
 		buf := make([]byte, bufsize)
-		binary.PutUvarint(buf, returncount)
+		binary.PutUvarint(buf, uint64(returncount))
 		db.putDbProperty(key, buf)
 	}
 	return returncount
 }
 
-func (db *GraphLevigo) AddVertex(id []byte) (*VertexLevigo, error) {
+func (db *GraphLevigo) AddVertex(id []byte) (core.Vertex, error) {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
-	if id == nil {return nil, NilValue}
-	val, err := db.nodes.Get(db.ro, id)
-	if val != nil {
-		return nil, KeyExists
+	if id == nil {
+		id = db.nextId()
+	} else {
+		val, _ := db.nodes.Get(db.ro, id)
+		if val != nil {
+			return nil, core.ErrAlreadyExists
+		}
 	}
-	err = db.nodes.Put(db.wo, id, []byte(VertexType))
+	err := db.nodes.Put(db.wo, id, []byte(VertexType))
 	if err != nil {return nil, err}
 	vertex := &VertexLevigo{&AtomLevigo{db,id,VertexType}}
 	db.keepcount(VertexType, 1)
 	return vertex, nil
 }
 
-func (db *GraphLevigo) Vertex(id []byte) *VertexLevigo {
-	if id == nil {return nil }
+func (db *GraphLevigo) Vertex(id []byte) (core.Vertex, error) {
+	if id == nil {return nil,core.ErrNilValue}
 	val,err := db.nodes.Get(db.ro, id)
-	if err != nil {return nil}
-	if val == nil {return nil}
-	if NodeType(val) != VertexType {return nil}
+	if err != nil {return nil, err}
+	if val == nil {return nil, nil}
+	if NodeType(val) != VertexType {return nil, nil}
 	vertex := &VertexLevigo{&AtomLevigo{db, id, VertexType}}
-	/*
-	vertex := new(VertexLevigo)
-	vertex.db = db
-	vertex.id = id
-	vertex.nodeType = VertexType
-	*/
-	return vertex
+	return vertex, nil
 }
 
-func (db *GraphLevigo) DelVertex(vertex *VertexLevigo) error {
+func (db *GraphLevigo) DelVertex(vertex core.Vertex) error {
+	if vertex == nil {	return core.ErrNilValue }
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
-	return db.delVertex(vertex)
+	vertexlevigo := vertex.(*VertexLevigo)
+	return db.delVertex(vertexlevigo)
 }
 
 func (db *GraphLevigo) delVertex(vertex *VertexLevigo) error {
-	if vertex == nil {	return NilValue }
-	if vertex.AtomLevigo == nil { return NilValue }
+	if vertex == nil {	return core.ErrNilValue }
+	if vertex.AtomLevigo == nil { return core.ErrNilValue }
 	id := vertex.Id()
-	if id == nil {	return NilValue }
+	if id == nil {	return core.ErrNilValue }
 	val,err := db.nodes.Get(db.ro, id)
 	if err != nil {return err}
-	if val == nil {return KeyDoesNotExist}
+	if val == nil {return nil}
 
 	// delete all hexastore data
-	for _, edge := range db.vertexEdges(0, vertex) {
-		db.delEdge(edge)
+	edges, _ :=  db.vertexEdges(core.DirOut, vertex) 
+	for _, edge := range edges {
+		db.delEdge(edge.(*EdgeLevigo))
 	}
 
-	for _, edge := range db.vertexEdges(1, vertex) {
-		db.delEdge(edge)
+	edges, _ =  db.vertexEdges(core.DirIn, vertex) 
+	for _, edge := range edges {
+		db.delEdge(edge.(*EdgeLevigo))
 	}
 
 	// delete all properties data 
@@ -317,8 +377,8 @@ func (db *GraphLevigo) delVertex(vertex *VertexLevigo) error {
 	return nil
 }
 
-func (db *GraphLevigo) Vertices() []*VertexLevigo {
-	vertii := []*VertexLevigo{}
+func (db *GraphLevigo) Vertices() ([]core.Vertex, error) {
+	vertii := []core.Vertex{}
 	var vertex *VertexLevigo
 	ro := levigo.NewReadOptions()
 	ro.SetFillCache(false)
@@ -332,22 +392,22 @@ func (db *GraphLevigo) Vertices() []*VertexLevigo {
 			vertii = append(vertii, vertex)
 		}
 	}
-	return vertii
+	return vertii, nil
 }
 
-func (db *GraphLevigo) vertexEdges(outorin int, vertex *VertexLevigo) ([]*EdgeLevigo) {
-	edges := []*EdgeLevigo{}
-	if vertex == nil || vertex.id == nil { return edges }
+func (db *GraphLevigo) vertexEdges(outorin core.Direction, vertex *VertexLevigo) ([]core.Edge, error) {
+	edges := []core.Edge{}
+	if vertex == nil || vertex.id == nil { return edges, core.ErrNilValue }
 	
 	// outorin == 0 is out, 1 = in
 	//prefix := 
 	var prefix []byte
-	if outorin == 0 {
+	if outorin == core.DirOut {
 		prefix = joinBytes(db.recsep, []byte(SPO), vertex.id)
-	} else if outorin == 1 {
+	} else if outorin == core.DirIn {
 		prefix = joinBytes(db.recsep, []byte(OPS), vertex.id)
 	} else {
-		return edges
+		return edges, core.ErrDirAnyUnsupported
 	}
 	ro := levigo.NewReadOptions()
 	ro.SetFillCache(false)
@@ -361,23 +421,24 @@ func (db *GraphLevigo) vertexEdges(outorin int, vertex *VertexLevigo) ([]*EdgeLe
 		//hxrec := it.Key()
 		_, _, eid, _ := idsFromHexaKey(db.recsep, it.Key())
 		//fmt.Printf("v=%v, eid=%v\n", string(vertex.Id()[:]),string(hxrec[:]))
-		edges = append(edges, db.Edge(eid))
+		edge, _ := db.Edge(eid)
+		edges = append(edges, edge)
 	}
 
-	return edges
+	return edges, nil
 
 }
 
-func (db *GraphLevigo) VertexOutEdges(vertex *VertexLevigo) ([]*EdgeLevigo) {
-	return db.vertexEdges(0, vertex)
+func (db *GraphLevigo) VertexOutEdges(vertex *VertexLevigo) ([]core.Edge, error) {
+	return db.vertexEdges(core.DirOut, vertex)
 }
 
-func (db *GraphLevigo) VertexInEdges(vertex *VertexLevigo) ([]*EdgeLevigo) {
-	return db.vertexEdges(1, vertex)
+func (db *GraphLevigo) VertexInEdges(vertex *VertexLevigo) ([]core.Edge, error) {
+	return db.vertexEdges(core.DirIn, vertex)
 }
 
 func idsFromHexaKey(sep []byte, nodes []byte) ([]byte, []byte, []byte, error) {
-	if nodes == nil { return nil, nil, nil, NilValue }
+	if nodes == nil { return nil, nil, nil, core.ErrNilValue }
 	nodearr := bytes.Split(nodes, sep)
 	if len(nodearr) != 4 {return nil,nil,nil, InvalidParameterValue }
 	var subject, object, predicate []byte
@@ -417,7 +478,7 @@ func idsFromHexaKey(sep []byte, nodes []byte) ([]byte, []byte, []byte, error) {
 }
 
 func newHexaIndexKey(sep []byte, subject []byte, object []byte, predicate []byte) (*HexaIndexKeys, error) {
-	if sep == nil || subject == nil || object ==nil || predicate == nil { return nil, NilValue }
+	if sep == nil || subject == nil || object ==nil || predicate == nil { return nil, core.ErrNilValue }
 	hi := new(HexaIndexKeys)
 	hi.spo = joinBytes(sep, []byte(SPO), subject, predicate, object)
 	hi.sop = joinBytes(sep, []byte(SOP), subject, object, predicate)
@@ -429,25 +490,28 @@ func newHexaIndexKey(sep []byte, subject []byte, object []byte, predicate []byte
 }
 
 
-func (db *GraphLevigo) AddEdge(id []byte, outvertex *VertexLevigo, invertex *VertexLevigo, label string) (*EdgeLevigo, error) {
+func (db *GraphLevigo) AddEdge(id []byte, outvertex core.Vertex, invertex core.Vertex, label string) (core.Edge, error) {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
-	if (id == nil) {return nil, NilValue}
-	if (outvertex == nil) {return nil, NilValue}
-	if (invertex == nil) {return nil, NilValue}
-
-	val,err := db.nodes.Get(db.ro, id)
-	if val != nil {
-		return nil, KeyExists
+	if (outvertex == nil) {return nil, core.ErrNilValue}
+	if (invertex == nil) {return nil, core.ErrNilValue}
+	if id == nil {
+		id = db.nextId()
+	} else {
+		val, _ := db.nodes.Get(db.ro, id)
+		if val != nil {
+			return nil, core.ErrAlreadyExists
+		}
 	}
-	err = db.nodes.Put(db.wo, id, []byte(EdgeType))
+
+	err := db.nodes.Put(db.wo, id, []byte(EdgeType))
 	if err != nil {return nil, err}
-	edge := &EdgeLevigo{&AtomLevigo{db, id, EdgeType}, outvertex, invertex, label}
+	edge := &EdgeLevigo{&AtomLevigo{db, id, EdgeType}, outvertex.(*VertexLevigo), invertex.(*VertexLevigo), label}
 
 	labelbyte := []byte(label)
 
 	// - add hexascale index
-	hi, _ := newHexaIndexKey(db.recsep, outvertex.id, invertex.id, id)
+	hi, _ := newHexaIndexKey(db.recsep, outvertex.Id(), invertex.Id(), id)
 
 	wb := levigo.NewWriteBatch()
 	defer wb.Close()
@@ -470,22 +534,22 @@ func joinBytes(sep []byte, nodes ...[]byte) ([]byte) {
 	return bytes.Join(nodes, sep)
 }
 
-func (db *GraphLevigo) fromEdgeRecord(record []byte) (*VertexLevigo, *VertexLevigo, string) {
+func (db *GraphLevigo) fromEdgeRecord(record []byte) (core.Vertex, core.Vertex, string) {
 	if record == nil { return nil, nil, ""}
 	edgevalues := bytes.Split(record, db.recsep)
 
-	outvertex := db.Vertex(edgevalues[0])
-	invertex := db.Vertex(edgevalues[1])
+	outvertex,_ := db.Vertex(edgevalues[0])
+	invertex,_ := db.Vertex(edgevalues[1])
 	label := string(edgevalues[2][:])
 	return outvertex, invertex, label
 }
 
-func (db *GraphLevigo) Edge(id []byte) *EdgeLevigo {
-	if id == nil {return nil }
+func (db *GraphLevigo) Edge(id []byte) (core.Edge, error) {
+	if id == nil {return nil, core.ErrNilValue}
 	val,err := db.nodes.Get(db.ro, id)
-	if err != nil {return nil}
-	if val == nil {return nil}
-	if NodeType(val) != EdgeType {return nil}
+	if err != nil {return nil, err}
+	if val == nil {return nil, core.ErrNilValue}
+	if NodeType(val) != EdgeType {return nil, nil}
 
 	prefix := joinBytes(db.recsep, []byte(PSO), id)
 	ro := levigo.NewReadOptions()
@@ -499,32 +563,37 @@ func (db *GraphLevigo) Edge(id []byte) *EdgeLevigo {
 		outvertex := &VertexLevigo{&AtomLevigo{db, outvertexid, VertexType}}
 		invertex := &VertexLevigo{&AtomLevigo{db, invertexid, VertexType}}
 		edge := &EdgeLevigo{&AtomLevigo{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
-		return edge
+		return edge, nil
 	} else {
-		return nil
+		return nil, nil
 	}
 }
 
-func (db *GraphLevigo) DelEdge(edge *EdgeLevigo) error {
+
+func (db *GraphLevigo) DelEdge(edge core.Edge) error {
+	if edge == nil {	return core.ErrNilValue }
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
-	return db.delEdge(edge) 
+	edgelevigo := edge.(*EdgeLevigo)
+	return db.delEdge(edgelevigo)
 }
 
 func (db *GraphLevigo) delEdge(edge *EdgeLevigo) error {
-	if edge == nil {	return NilValue }
-	if edge.AtomLevigo == nil { return NilValue }
+	if edge == nil {	return core.ErrNilValue }
+	if edge.AtomLevigo == nil { return core.ErrNilValue }
 	id := edge.Id()
-	if id == nil {	return NilValue }
+	if id == nil {	return core.ErrNilValue }
 	val,err := db.nodes.Get(db.ro, id)
 	if err != nil {return err}
-	if val == nil {return KeyDoesNotExist}
+	if val == nil {return core.ErrDoesntExist}
 
 
 	//  delete all hexastore data
 	// //todo - add hexascale index
 	//hexaindex key 
-	hi, _ := newHexaIndexKey(db.recsep, edge.VertexOut().id, edge.VertexIn().id, id)
+	vout, _ := edge.VertexOut()
+	vin, _ := edge.VertexIn()
+	hi, _ := newHexaIndexKey(db.recsep, vout.Id(), vin.Id(), id)
 	wb2 := levigo.NewWriteBatch()
 	defer wb2.Close()
 	wb2.Delete(hi.spo)
@@ -567,8 +636,8 @@ func (db *GraphLevigo) delEdge(edge *EdgeLevigo) error {
 	return nil
 }
 
-func (db *GraphLevigo) Edges() []*EdgeLevigo {
-	edges := []*EdgeLevigo{}
+func (db *GraphLevigo) Edges() ([]core.Edge, error) {
+	edges := []core.Edge{}
 
 	prefix := []byte(PSO)
 	ro := levigo.NewReadOptions()
@@ -586,16 +655,16 @@ func (db *GraphLevigo) Edges() []*EdgeLevigo {
 		edges = append(edges, edge)
 	}
 
-	return edges
+	return edges, nil
 
 }
 
 
-func (db *GraphLevigo) EdgeCount() uint64 {
+func (db *GraphLevigo) EdgeCount() uint {
 	return db.keepcount(EdgeType, 0)
 }
 
-func (db *GraphLevigo) VertexCount() uint64 {
+func (db *GraphLevigo) VertexCount() uint {
 	return db.keepcount(VertexType, 0)
 }
 
@@ -606,15 +675,15 @@ func (db *GraphLevigo) getPropKey(id []byte, prop string) ([]byte) {
 	return key
 }
 
-func (db *GraphLevigo) ElementProperty(node *AtomLevigo, prop string) ([]byte) {
-	if prop == "" || node == nil || node.id == nil { return nil }
+func (db *GraphLevigo) AtomProperty(node *AtomLevigo, prop string) ([]byte, error) {
+	if prop == "" || node == nil || node.id == nil { return nil, nil }
 	key := db.getPropKey(node.id, prop)
 	val, err := db.props.Get(db.ro, key)
-	if err != nil {return nil}
-	return val
+	if err != nil {return nil, err}
+	return val, nil
 }
 
-func (db *GraphLevigo) ElementSetProperty(node *AtomLevigo, prop string, value []byte) (error){
+func (db *GraphLevigo) AtomSetProperty(node *AtomLevigo, prop string, value []byte) error {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
 	if prop == "" || node == nil || node.id == nil { return nil }
@@ -623,19 +692,19 @@ func (db *GraphLevigo) ElementSetProperty(node *AtomLevigo, prop string, value [
 	return err
 }
 
-func (db *GraphLevigo) ElementDelProperty(node *AtomLevigo, prop string) ([]byte) {
+func (db *GraphLevigo) AtomDelProperty(node *AtomLevigo, prop string) error {
 	db.rwlock.Lock()
 	defer db.rwlock.Unlock()
 	if prop == "" || node == nil || node.id == nil { return nil }
 	key := db.getPropKey(node.id, prop)
-	val, err := db.props.Get(db.ro, key)
-	if err != nil {return nil}
-	err = db.props.Delete(db.wo, key)
-	if err != nil {return nil}
-	return val
+	//val, err := db.props.Get(db.ro, key)
+	//if err != nil {return err}
+	err := db.props.Delete(db.wo, key)
+	if err != nil {return err}
+	return nil
 }
 
-func (db *GraphLevigo) ElementPropertyKeys(node *AtomLevigo) ([]string) {
+func (db *GraphLevigo) AtomPropertyKeys(node *AtomLevigo) ([]string, error) {
 	propkeys := []string{}
 	ro := levigo.NewReadOptions()
 	ro.SetFillCache(false)
@@ -649,5 +718,5 @@ func (db *GraphLevigo) ElementPropertyKeys(node *AtomLevigo) ([]string) {
 		prop = bytes.Split(it.Key(), db.recsep)[1]
 		propkeys = append(propkeys, string(prop[:]))
 	}
-	return propkeys
+	return propkeys, nil
 }

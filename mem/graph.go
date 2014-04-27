@@ -3,7 +3,6 @@ package mem
 import (
 		"github.com/lexlapax/graveldb/core"
 		"sync"
-		"errors"
 		"strconv"
 		//"fmt"
 )
@@ -13,10 +12,6 @@ const (
 	)
 
 var (
-	// ErrDoesntExist = errors.New("the object with the id does not exist")
-	// ErrAlreadyExists = errors.New("the object with the id already exists")
-	// ErrNilValue = errors.New("value passed cannot be nil")
-	ErrDirAnyUnsupported = errors.New("Any Direction not supported")
 	register sync.Once
 )
 

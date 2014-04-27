@@ -10,14 +10,13 @@ import (
 func init() {
 	Register()
 }
-var graphimpl = "mem"
 
 type GraphTestSuite struct {
 	coretest.GraphTestSuite
 }
 
 func (suite *GraphTestSuite) SetupSuite() {
-    suite.TestGraph = core.GetGraph(graphimpl)
+    suite.TestGraph = core.GetGraph(GraphImpl)
 }
 
 func (suite *GraphTestSuite) TearSuite() {
