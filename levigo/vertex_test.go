@@ -30,6 +30,6 @@ func (suite *VertexTestSuite) TearDownTest() {
 }
 
 func TestVertexTestSuite(t *testing.T) {
-	t.Skip()
+	//t.Skip()
     suite.Run(t, new(VertexTestSuite))
 }

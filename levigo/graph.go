@@ -395,7 +395,7 @@ func (db *GraphLevigo) Vertices() ([]core.Vertex, error) {
 	return vertii, nil
 }
 
-func (db *GraphLevigo) vertexEdges(outorin core.Direction, vertex *VertexLevigo) ([]core.Edge, error) {
+func (db *GraphLevigo) vertexEdges(outorin core.Direction, vertex *VertexLevigo, labels ...string) ([]core.Edge, error) {
 	edges := []core.Edge{}
 	if vertex == nil || vertex.id == nil { return edges, core.ErrNilValue }
 	
@@ -415,28 +415,43 @@ func (db *GraphLevigo) vertexEdges(outorin core.Direction, vertex *VertexLevigo)
 	defer it.Close()
 	defer ro.Close()
 	it.Seek(prefix)
-
-
+	labelset := core.NewStringSet()
+	if len(labels) > 0 {
+		for _, label := range labels {
+			labelset.Add(label)
+		}
+	}
+	addedge := false
 	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
 		//hxrec := it.Key()
 		_, _, eid, _ := idsFromHexaKey(db.recsep, it.Key())
-		//fmt.Printf("v=%v, eid=%v\n", string(vertex.Id()[:]),string(hxrec[:]))
-		edge, _ := db.Edge(eid)
-		edges = append(edges, edge)
+		if labelset.Count() > 0 {
+			label := string(it.Value()[:])
+			if labelset.Contains(label) { addedge = true }
+		} else {
+			addedge = true
+		}
+		if addedge == true {
+			//fmt.Printf("v=%v, eid=%v\n", string(vertex.Id()[:]),string(hxrec[:]))
+			edge, _ := db.Edge(eid)
+			edges = append(edges, edge)
+		}
+		addedge = false
 	}
 
 	return edges, nil
 
 }
 
-func (db *GraphLevigo) VertexOutEdges(vertex *VertexLevigo) ([]core.Edge, error) {
+func (db *GraphLevigo) VertexOutEdges(vertex *VertexLevigo, labels ...string) ([]core.Edge, error) {
 	return db.vertexEdges(core.DirOut, vertex)
 }
 
-func (db *GraphLevigo) VertexInEdges(vertex *VertexLevigo) ([]core.Edge, error) {
+func (db *GraphLevigo) VertexInEdges(vertex *VertexLevigo, labels ...string) ([]core.Edge, error) {
 	return db.vertexEdges(core.DirIn, vertex)
 }
 
+// returns outvertex, invertex, edge,  error
 func idsFromHexaKey(sep []byte, nodes []byte) ([]byte, []byte, []byte, error) {
 	if nodes == nil { return nil, nil, nil, core.ErrNilValue }
 	nodearr := bytes.Split(nodes, sep)

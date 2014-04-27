@@ -126,8 +126,8 @@ func (suite *AtomTestSuite) TestAtomProperty(){
 		propval,_ = edge2.Property("nickname")
 		assert.Equal(suite.T(), []byte("connector 2"), propval)
 
-		propkeys = append(propkeys, "name")
-		propkeys = append(propkeys, "nickname")
+		//propkeys = append(propkeys, "name")
+		//propkeys = append(propkeys, "nickname")
 		keys1,_ := vertex1.PropertyKeys()
 
 		assert.Equal(suite.T(), propkeys, keys1)

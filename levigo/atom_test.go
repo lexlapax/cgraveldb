@@ -31,6 +31,6 @@ func (suite *AtomTestSuite) TearDownTest() {
 }
 
 func TestAtomTestSuite(t *testing.T) {
-	t.Skip()
+	//t.Skip()
     suite.Run(t, new(AtomTestSuite))
 }
