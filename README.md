@@ -8,7 +8,7 @@ This is an exercise in learning go for me. I intend to use it as a generic backi
 
 uses leveldb as a backing store
 
-it sort of works right now.
+<del>it sort of works right now.</del> -- broken till refactoring for core interfaces are redone
 it's a very basic property graph.. 
 there are no optimizations for queries yet 
 there is no write collision prevention, yet, so do writes serially (addvertex, addedge, deletevertex, deleteedge) - now implemented writelocks using mutex for now
