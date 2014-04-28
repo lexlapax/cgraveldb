@@ -3,6 +3,7 @@ package core
 import (
 		"sync"
 		"sort"
+		"fmt"
 )
 
 type StringSet struct {
@@ -75,6 +76,10 @@ func (set *StringSet) Equal(other *StringSet) bool {
 		}
 	}
 	return true
+}
+
+func (set *StringSet) String() string {
+	return "&{Stringset[] " + fmt.Sprintf("%v", set.Members()) + "}"
 }
 
 //-----edgeSet

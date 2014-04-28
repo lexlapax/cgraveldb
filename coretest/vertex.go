@@ -3,11 +3,24 @@ package coretest
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/lexlapax/graveldb/core"
+	//"fmt"
 )
 
 type VertexTestSuite struct {
 	BaseTestSuite
 }
+
+	// this is what we will test
+	// v1 points to v2 and v3 which both point to v4 which points back to v1
+
+	// 		v2
+	// 	/		\
+	// v1			v4 - v1
+	// 	\		/
+	// 		v3
+	
+	//
+
 
 func (suite *VertexTestSuite) TestVertex(){
 
@@ -20,17 +33,6 @@ func (suite *VertexTestSuite) TestVertex(){
 	vertex2,_ := suite.TestGraph.AddVertex(vid2)
 	vertex3,_ := suite.TestGraph.AddVertex(vid3)
 	vertex4,_ := suite.TestGraph.AddVertex(vid4)
-
-	// this is what we will test
-	// v1 points to v2 and v3 which both point to v4 which points back to v1
-
-	// 		v2
-	// 	/		\
-	// v1			v4 - v1
-	// 	\		/
-	// 		v3
-	
-	//
 
 	edges, _ := vertex1.OutEdges()
 	assert.True(suite.T(), len(edges) == 0)
@@ -180,4 +182,176 @@ func (suite *VertexTestSuite) TestVertex(){
 	assert.Equal(suite.T(), edge1, edges[0])
 	edges, _ = vertex2.InEdges()
 	assert.Equal(suite.T(), edge1, edges[0])
+}
+
+func (suite *VertexTestSuite) TestVertexGet() {
+	vid1 := []byte("vertex1")
+	vid2 := []byte("vertex2")
+	vid3 := []byte("vertex3")
+	vid4 := []byte("vertex4")
+
+	vertex1,_ := suite.TestGraph.AddVertex(vid1)
+	vertex2,_ := suite.TestGraph.AddVertex(vid2)
+	vertex3,_ := suite.TestGraph.AddVertex(vid3)
+	vertex4,_ := suite.TestGraph.AddVertex(vid4)
+
+	eid1 := []byte("edge1")
+	eid2 := []byte("edge2")
+	eid3 := []byte("edge3")
+	eid4 := []byte("edge4")
+	eid5 := []byte("edge5")
+
+	edge1, _ := suite.TestGraph.AddEdge(eid1, vertex1, vertex2, "1 to 2")
+	edge2, _ := suite.TestGraph.AddEdge(eid2, vertex1, vertex3, "1 to 3")
+	edge3, _ := suite.TestGraph.AddEdge(eid3, vertex2, vertex4, "2 to 4")
+	edge4, _ := suite.TestGraph.AddEdge(eid4, vertex3, vertex4, "3 to 4")
+	edge5, _ := suite.TestGraph.AddEdge(eid5, vertex4, vertex1, "4 to 1")
+
+	edgeset := core.NewEdgeSet()
+	edges, _ := suite.TestGraph.Edges()
+
+	assert.True(suite.T(), len(edges) == 5)
+
+	//check Dir In
+	edges,_ = vertex1.Edges(core.DirIn)
+	//fmt.Printf("edges = %v\n", edges)
+	assert.True(suite.T(), len(edges) == 1)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge5))
+
+	edges,_ = vertex2.Edges(core.DirIn)
+	assert.True(suite.T(), len(edges) == 1)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge1))
+
+	edges,_ = vertex3.Edges(core.DirIn)
+	assert.True(suite.T(), len(edges) == 1)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge2))
+
+	edges,_ = vertex4.Edges(core.DirIn)
+	assert.True(suite.T(), len(edges) == 2)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge3))
+	assert.True(suite.T(), edgeset.Contains(edge4))
+
+
+	//check Dir Out
+	edges,_ = vertex1.Edges(core.DirOut)
+	assert.True(suite.T(), len(edges) == 2)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge1))
+	assert.True(suite.T(), edgeset.Contains(edge2))
+
+	edges,_ = vertex2.Edges(core.DirOut)
+	assert.True(suite.T(), len(edges) == 1)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge3))
+
+	edges,_ = vertex3.Edges(core.DirOut)
+	assert.True(suite.T(), len(edges) == 1)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge4))
+
+	edges,_ = vertex4.Edges(core.DirOut)
+	assert.True(suite.T(), len(edges) == 1)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge5))
+
+	//check Dir Any
+	edges,_ = vertex1.Edges(core.DirAny)
+	assert.True(suite.T(), len(edges) == 3)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge1))
+	assert.True(suite.T(), edgeset.Contains(edge2))
+	assert.True(suite.T(), edgeset.Contains(edge5))
+
+	edges,_ = vertex2.Edges(core.DirAny)
+	assert.True(suite.T(), len(edges) == 2)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge1))
+	assert.True(suite.T(), edgeset.Contains(edge3))
+
+	edges,_ = vertex3.Edges(core.DirAny)
+	assert.True(suite.T(), len(edges) == 2)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge2))
+	assert.True(suite.T(), edgeset.Contains(edge4))
+
+	edges,_ = vertex4.Edges(core.DirAny)
+	assert.True(suite.T(), len(edges) == 3)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge3))
+	assert.True(suite.T(), edgeset.Contains(edge4))
+	assert.True(suite.T(), edgeset.Contains(edge5))
+
+
+	//check Labels
+	edges,_ = vertex1.Edges(core.DirAny, "1 to 2")
+	assert.True(suite.T(), len(edges) == 1)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge1))
+
+	edges,_ = vertex4.Edges(core.DirAny, "2 to 4")
+	assert.True(suite.T(), len(edges) == 1)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge3))
+
+	edges,_ = vertex4.Edges(core.DirAny, "3 to 4", "4 to 1")
+	assert.True(suite.T(), len(edges) == 2)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge4))
+	assert.True(suite.T(), edgeset.Contains(edge5))
+
+
+	edges,_ = vertex2.Edges(core.DirIn, "3 to 4")
+	assert.True(suite.T(), len(edges) == 0)
+
+	edges,_ = vertex2.Edges(core.DirOut, "3 to 4")
+	assert.True(suite.T(), len(edges) == 0)
+
+	edges,_ = vertex2.Edges(core.DirIn, "1 to 2")
+	assert.True(suite.T(), len(edges) == 1)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge1))
+
+	edges,_ = vertex2.Edges(core.DirOut, "2 to 4")
+	//fmt.Printf("edges = %v\n", edges)
+	assert.True(suite.T(), len(edges) == 1)
+	for _, edge := range edges {
+		edgeset.Add(edge)
+	}
+	assert.True(suite.T(), edgeset.Contains(edge3))
 }

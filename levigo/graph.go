@@ -416,11 +416,15 @@ func (db *GraphLevigo) vertexEdges(outorin core.Direction, vertex *VertexLevigo,
 	defer ro.Close()
 	it.Seek(prefix)
 	labelset := core.NewStringSet()
+	//fmt.Printf("labels = %v\n", labels)
 	if len(labels) > 0 {
 		for _, label := range labels {
 			labelset.Add(label)
 		}
 	}
+
+	//fmt.Printf("labelset=%v\n", labelset)
+
 	addedge := false
 	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
 		//hxrec := it.Key()
@@ -444,11 +448,11 @@ func (db *GraphLevigo) vertexEdges(outorin core.Direction, vertex *VertexLevigo,
 }
 
 func (db *GraphLevigo) VertexOutEdges(vertex *VertexLevigo, labels ...string) ([]core.Edge, error) {
-	return db.vertexEdges(core.DirOut, vertex)
+	return db.vertexEdges(core.DirOut, vertex, labels...)
 }
 
 func (db *GraphLevigo) VertexInEdges(vertex *VertexLevigo, labels ...string) ([]core.Edge, error) {
-	return db.vertexEdges(core.DirIn, vertex)
+	return db.vertexEdges(core.DirIn, vertex, labels...)
 }
 
 // returns outvertex, invertex, edge,  error
