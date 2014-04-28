@@ -160,3 +160,89 @@ func (set *EdgeSet) Equal(other *EdgeSet) bool {
 	}
 	return true
 }
+
+//-----atomSet
+type AtomSet struct {
+	atommap map[string]Atom
+	sync.RWMutex
+}
+
+func NewAtomSet() *AtomSet {
+	set := new(AtomSet)
+	set.atommap = make(map[string]Atom)
+	return set
+}
+
+func (set *AtomSet) Add(atom Atom) {
+	if atom == nil || atom.Id() == nil { return }
+	id := string(atom.Id()[:])
+	set.Lock()
+	defer set.Unlock()
+	if _, ok := set.atommap[id]; ok {
+		return
+	} else {
+		set.atommap[id] = atom
+	}
+	return
+}
+
+func (set *AtomSet) Del(atom Atom) {
+	if atom == nil || atom.Id() == nil { return }
+	id := string(atom.Id()[:])
+	set.Lock()
+	defer set.Unlock()
+	delete(set.atommap, id)
+	return
+}
+
+func (set *AtomSet) Contains(atom Atom) bool {
+	if atom == nil || atom.Id() == nil { return false}
+	if _, ok := set.atommap[string(atom.Id()[:])]; ok {
+		return true
+	}
+	return false
+}
+
+func (set *AtomSet) Members() []Atom {
+	atoms := []Atom{}
+	keys := []string{}
+	set.RLock()
+	defer set.RUnlock()
+	for k, _ := range set.atommap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		atoms = append(atoms, set.atommap[k])
+	}
+	return atoms
+}
+
+func (set *AtomSet) Count() int {
+	set.RLock()
+	defer set.RUnlock()
+	return len(set.atommap)
+}
+
+func (set *AtomSet) Clear() {
+	set.Lock()
+	defer set.Unlock()
+	set.atommap = make(map[string]Atom)
+}
+
+func (set *AtomSet) Equal(other *AtomSet) bool {
+
+	if set.Count() != other.Count() {
+		return false
+	}
+	set.RLock()
+	defer set.RUnlock()
+
+	for _, elem := range set.atommap {
+		if !other.Contains(elem) {
+			return false
+		}
+	}
+	return true
+}
+
