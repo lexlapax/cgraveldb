@@ -33,6 +33,3 @@ func (suite *BaseTestSuite) TearDownTest() {
     suite.TestGraph.Close()
 }
 
-// func BaseTestSuite(t *testing.T) {
-//     suite.Run(t, new(AtomTestSuite))
-// }

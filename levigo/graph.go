@@ -395,6 +395,66 @@ func (db *GraphLevigo) Vertices() ([]core.Vertex, error) {
 	return vertii, nil
 }
 
+
+func (db *GraphLevigo) vertexVertices(outorin core.Direction, vertex *VertexLevigo, labels ...string) ([]core.Vertex, error) {
+	vertices := []core.Vertex{}
+	if vertex == nil || vertex.id == nil { return vertices, core.ErrNilValue }
+	
+	// outorin == 0 is out, 1 = in
+	//prefix := 
+	var prefix []byte
+	if outorin == core.DirOut {
+		prefix = joinBytes(db.recsep, []byte(SPO), vertex.id)
+	} else if outorin == core.DirIn {
+		prefix = joinBytes(db.recsep, []byte(OPS), vertex.id)
+	} else {
+		return vertices, core.ErrDirAnyUnsupported
+	}
+	ro := levigo.NewReadOptions()
+	ro.SetFillCache(false)
+	it := db.hexaindex.NewIterator(ro)
+	defer it.Close()
+	defer ro.Close()
+	it.Seek(prefix)
+	labelset := core.NewStringSet()
+	//fmt.Printf("labels = %v\n", labels)
+	if len(labels) > 0 {
+		for _, label := range labels {
+			labelset.Add(label)
+		}
+	}
+
+	//fmt.Printf("labelset=%v\n", labelset)
+
+	addvertex := false
+	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+		//hxrec := it.Key()
+		outvid, invid, _, _ := idsFromHexaKey(db.recsep, it.Key())
+		if labelset.Count() > 0 {
+			label := string(it.Value()[:])
+			if labelset.Contains(label) { addvertex = true }
+		} else {
+			addvertex = true
+		}
+		if addvertex == true {
+			gotvertexid := []byte{}
+			//which vertex
+			if bytes.Compare(vertex.Id(), outvid) == 0 {
+				gotvertexid = invid
+			} else {
+				gotvertexid = outvid
+			}
+			//fmt.Printf("v=%v, eid=%v\n", string(vertex.Id()[:]),string(hxrec[:]))
+			gotvertex, _ := db.Vertex(gotvertexid)
+			vertices = append(vertices, gotvertex)
+		}
+		addvertex = false
+	}
+
+	return vertices, nil
+
+}
+
 func (db *GraphLevigo) vertexEdges(outorin core.Direction, vertex *VertexLevigo, labels ...string) ([]core.Edge, error) {
 	edges := []core.Edge{}
 	if vertex == nil || vertex.id == nil { return edges, core.ErrNilValue }

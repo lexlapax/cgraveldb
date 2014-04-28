@@ -3,7 +3,7 @@ package coretest
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/lexlapax/graveldb/core"
-	//"fmt"
+	// "fmt"
 )
 
 type VertexTestSuite struct {
@@ -207,151 +207,345 @@ func (suite *VertexTestSuite) TestVertexGet() {
 	edge4, _ := suite.TestGraph.AddEdge(eid4, vertex3, vertex4, "3 to 4")
 	edge5, _ := suite.TestGraph.AddEdge(eid5, vertex4, vertex1, "4 to 1")
 
-	edgeset := core.NewEdgeSet()
+	edgeset := core.NewAtomSet()
+	vertexset := core.NewAtomSet()
 	edges, _ := suite.TestGraph.Edges()
+	vertices, _ := suite.TestGraph.Vertices()
 
 	assert.True(suite.T(), len(edges) == 5)
+	assert.True(suite.T(), len(vertices) == 4)
 
 	//check Dir In
 	edges,_ = vertex1.Edges(core.DirIn)
 	//fmt.Printf("edges = %v\n", edges)
 	assert.True(suite.T(), len(edges) == 1)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 1)
 	assert.True(suite.T(), edgeset.Contains(edge5))
+
+	vertices,_ = vertex1.Vertices(core.DirIn)
+	assert.True(suite.T(), len(vertices) == 1)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 1)
+	assert.True(suite.T(), vertexset.Contains(vertex4))
+
 
 	edges,_ = vertex2.Edges(core.DirIn)
 	assert.True(suite.T(), len(edges) == 1)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 1)
 	assert.True(suite.T(), edgeset.Contains(edge1))
+	vertices,_ = vertex2.Vertices(core.DirIn)
+	assert.True(suite.T(), len(vertices) == 1)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 1)
+	assert.True(suite.T(), vertexset.Contains(vertex1))
+
 
 	edges,_ = vertex3.Edges(core.DirIn)
 	assert.True(suite.T(), len(edges) == 1)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 1)
 	assert.True(suite.T(), edgeset.Contains(edge2))
+	vertices,_ = vertex3.Vertices(core.DirIn)
+	assert.True(suite.T(), len(vertices) == 1)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 1)
+	assert.True(suite.T(), vertexset.Contains(vertex1))
 
 	edges,_ = vertex4.Edges(core.DirIn)
 	assert.True(suite.T(), len(edges) == 2)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 2)
 	assert.True(suite.T(), edgeset.Contains(edge3))
 	assert.True(suite.T(), edgeset.Contains(edge4))
+	vertices,_ = vertex4.Vertices(core.DirIn)
+	assert.True(suite.T(), len(vertices) == 2)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 2)
+	assert.True(suite.T(), vertexset.Contains(vertex2))
+	assert.True(suite.T(), vertexset.Contains(vertex3))
 
 
 	//check Dir Out
 	edges,_ = vertex1.Edges(core.DirOut)
 	assert.True(suite.T(), len(edges) == 2)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 2)
 	assert.True(suite.T(), edgeset.Contains(edge1))
 	assert.True(suite.T(), edgeset.Contains(edge2))
+	vertices,_ = vertex1.Vertices(core.DirOut)
+	assert.True(suite.T(), len(vertices) == 2)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 2)
+	assert.True(suite.T(), vertexset.Contains(vertex2))
+	assert.True(suite.T(), vertexset.Contains(vertex3))
 
 	edges,_ = vertex2.Edges(core.DirOut)
 	assert.True(suite.T(), len(edges) == 1)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 1)
 	assert.True(suite.T(), edgeset.Contains(edge3))
+	vertices,_ = vertex2.Vertices(core.DirOut)
+	assert.True(suite.T(), len(vertices) == 1)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 1)
+	assert.True(suite.T(), vertexset.Contains(vertex4))
+
 
 	edges,_ = vertex3.Edges(core.DirOut)
 	assert.True(suite.T(), len(edges) == 1)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 1)
 	assert.True(suite.T(), edgeset.Contains(edge4))
+	vertices,_ = vertex3.Vertices(core.DirOut)
+	assert.True(suite.T(), len(vertices) == 1)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 1)
+	assert.True(suite.T(), vertexset.Contains(vertex4))
+
 
 	edges,_ = vertex4.Edges(core.DirOut)
 	assert.True(suite.T(), len(edges) == 1)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 1)
 	assert.True(suite.T(), edgeset.Contains(edge5))
+	vertices,_ = vertex4.Vertices(core.DirOut)
+	// fmt.Printf("vertices=%v\n", vertices)
+	assert.True(suite.T(), len(vertices) == 1)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 1)
+	assert.True(suite.T(), vertexset.Contains(vertex1))
+
 
 	//check Dir Any
 	edges,_ = vertex1.Edges(core.DirAny)
 	assert.True(suite.T(), len(edges) == 3)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 3)
 	assert.True(suite.T(), edgeset.Contains(edge1))
 	assert.True(suite.T(), edgeset.Contains(edge2))
 	assert.True(suite.T(), edgeset.Contains(edge5))
+	vertices,_ = vertex1.Vertices(core.DirAny)
+	assert.True(suite.T(), len(vertices) == 3)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 3)
+	assert.True(suite.T(), vertexset.Contains(vertex2))
+	assert.True(suite.T(), vertexset.Contains(vertex3))
+	assert.True(suite.T(), vertexset.Contains(vertex4))
+
 
 	edges,_ = vertex2.Edges(core.DirAny)
 	assert.True(suite.T(), len(edges) == 2)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 2)
 	assert.True(suite.T(), edgeset.Contains(edge1))
 	assert.True(suite.T(), edgeset.Contains(edge3))
+	vertices,_ = vertex2.Vertices(core.DirAny)
+	assert.True(suite.T(), len(vertices) == 2)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 2)
+	assert.True(suite.T(), vertexset.Contains(vertex1))
+	assert.True(suite.T(), vertexset.Contains(vertex4))
 
 	edges,_ = vertex3.Edges(core.DirAny)
 	assert.True(suite.T(), len(edges) == 2)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 2)
 	assert.True(suite.T(), edgeset.Contains(edge2))
 	assert.True(suite.T(), edgeset.Contains(edge4))
+	vertices,_ = vertex3.Vertices(core.DirAny)
+	assert.True(suite.T(), len(vertices) == 2)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 2)
+	assert.True(suite.T(), vertexset.Contains(vertex1))
+	assert.True(suite.T(), vertexset.Contains(vertex4))
 
 	edges,_ = vertex4.Edges(core.DirAny)
 	assert.True(suite.T(), len(edges) == 3)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 3)
 	assert.True(suite.T(), edgeset.Contains(edge3))
 	assert.True(suite.T(), edgeset.Contains(edge4))
 	assert.True(suite.T(), edgeset.Contains(edge5))
+	vertices,_ = vertex4.Vertices(core.DirAny)
+	assert.True(suite.T(), len(vertices) == 3)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 3)
+	assert.True(suite.T(), vertexset.Contains(vertex2))
+	assert.True(suite.T(), vertexset.Contains(vertex3))
+	assert.True(suite.T(), vertexset.Contains(vertex1))
 
 
 	//check Labels
 	edges,_ = vertex1.Edges(core.DirAny, "1 to 2")
 	assert.True(suite.T(), len(edges) == 1)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 1)
 	assert.True(suite.T(), edgeset.Contains(edge1))
+	vertices,_ = vertex1.Vertices(core.DirAny, "1 to 2")
+	assert.True(suite.T(), len(vertices) == 1)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 1)
+	assert.True(suite.T(), vertexset.Contains(vertex2))
 
 	edges,_ = vertex4.Edges(core.DirAny, "2 to 4")
 	assert.True(suite.T(), len(edges) == 1)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 1)
 	assert.True(suite.T(), edgeset.Contains(edge3))
+	vertices,_ = vertex4.Vertices(core.DirAny, "2 to 4")
+	assert.True(suite.T(), len(vertices) == 1)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 1)
+	assert.True(suite.T(), vertexset.Contains(vertex2))
 
 	edges,_ = vertex4.Edges(core.DirAny, "3 to 4", "4 to 1")
 	assert.True(suite.T(), len(edges) == 2)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 2)
 	assert.True(suite.T(), edgeset.Contains(edge4))
 	assert.True(suite.T(), edgeset.Contains(edge5))
+	vertices,_ = vertex4.Vertices(core.DirAny, "3 to 4", "4 to 1")
+	assert.True(suite.T(), len(vertices) == 2)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 2)
+	assert.True(suite.T(), vertexset.Contains(vertex3))
+	assert.True(suite.T(), vertexset.Contains(vertex1))
 
 
 	edges,_ = vertex2.Edges(core.DirIn, "3 to 4")
 	assert.True(suite.T(), len(edges) == 0)
+	vertices,_ = vertex2.Vertices(core.DirIn, "3 to 4")
+	assert.True(suite.T(), len(vertices) == 0)
 
 	edges,_ = vertex2.Edges(core.DirOut, "3 to 4")
 	assert.True(suite.T(), len(edges) == 0)
+	vertices,_ = vertex2.Vertices(core.DirOut, "3 to 4")
+	assert.True(suite.T(), len(vertices) == 0)
 
 	edges,_ = vertex2.Edges(core.DirIn, "1 to 2")
 	assert.True(suite.T(), len(edges) == 1)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 1)
 	assert.True(suite.T(), edgeset.Contains(edge1))
+	vertices,_ = vertex2.Vertices(core.DirIn, "1 to 2")
+	assert.True(suite.T(), len(vertices) == 1)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 1)
+	assert.True(suite.T(), vertexset.Contains(vertex1))
 
 	edges,_ = vertex2.Edges(core.DirOut, "2 to 4")
 	//fmt.Printf("edges = %v\n", edges)
 	assert.True(suite.T(), len(edges) == 1)
+	edgeset.Clear()
 	for _, edge := range edges {
 		edgeset.Add(edge)
 	}
+	assert.True(suite.T(), edgeset.Count() == 1)
 	assert.True(suite.T(), edgeset.Contains(edge3))
+	vertices,_ = vertex2.Vertices(core.DirOut, "2 to 4")
+	assert.True(suite.T(), len(vertices) == 1)
+	vertexset.Clear()
+	for _, vertex := range vertices {
+		vertexset.Add(vertex)
+	}
+	assert.True(suite.T(), vertexset.Count() == 1)
+	assert.True(suite.T(), vertexset.Contains(vertex4))
 }

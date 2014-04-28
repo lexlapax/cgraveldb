@@ -20,5 +20,6 @@ func (suite *AtomTestSuite) TearSuite() {
 }
 
 func TestAtomTestSuite(t *testing.T) {
+	//t.Skip()
     suite.Run(t, new(AtomTestSuite))
 }

@@ -327,7 +327,8 @@ func (suite *GraphTestSuite) TestGraphEdgeGetAll() {
 	vertex2,_ := suite.TestGraph.AddVertex(vid2)
 
 	assert.True(suite.T(), suite.TestGraph.EdgeCount() == uint(0))
-	testedges := core.NewEdgeSet()
+	// testedges := core.NewEdgeSet()
+	testedges := core.NewAtomSet()
 	var edge core.Edge
 	alpha := []string{"a","b","c","d","e"}
 	numb := []string{"1","2","3","4","5"}

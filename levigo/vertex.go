@@ -12,7 +12,25 @@ type VertexLevigo struct {
 
 
 func (vertex *VertexLevigo) Vertices(direction core.Direction, labels ...string) ([]core.Vertex, error) {
-	return nil, nil
+	var forward, reverse []core.Vertex
+	var err error
+	if direction == core.DirOut {
+		forward, err = vertex.db.vertexVertices(core.DirOut, vertex, labels...)
+		return forward, err
+	} else if direction == core.DirIn {
+		reverse, err = vertex.db.vertexVertices(core.DirIn, vertex, labels...)
+		return reverse, err
+	} else {
+		forward, err = vertex.db.vertexVertices(core.DirOut, vertex, labels...)
+		//fmt.Printf("forward vertices=%v,err=%v\n",forward, err)
+		if err != nil {return []core.Vertex{}, err}
+		reverse, err = vertex.db.vertexVertices(core.DirIn, vertex, labels...)
+		//fmt.Printf("reverse vertices=%v\n",reverse)
+		if err != nil {return []core.Vertex{}, err}
+		return append(forward, reverse...), nil
+	}
+
+	return nil, nil 
 }
 
 func (vertex *VertexLevigo) Edges(direction core.Direction, labels ...string) ([]core.Edge, error) {

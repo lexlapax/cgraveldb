@@ -21,5 +21,6 @@ func (suite *EdgeTestSuite) TearSuite() {
 }
 
 func TestEdgeTestSuite(t *testing.T) {
+	//t.Skip()
     suite.Run(t, new(EdgeTestSuite))
 }

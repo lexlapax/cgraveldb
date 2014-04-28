@@ -20,5 +20,6 @@ func (suite *VertexTestSuite) TearSuite() {
 }
 
 func TestVertexTestSuite(t *testing.T) {
+	//t.Skip()
     suite.Run(t, new(VertexTestSuite))
 }
