@@ -16,7 +16,7 @@ type VertexMem struct {
 
 func NewVertexMem(db *GraphMem, id []byte) *VertexMem {
 	//vertex := &VertexMem{NewAtomMem(db, id, VertexType), make(map[string]mapset.Set), make(map[string]mapset.Set)}
-	vertex := &VertexMem{NewAtomMem(db, id, VertexType), make(map[string]*core.AtomSet), make(map[string]*core.AtomSet)}
+	vertex := &VertexMem{NewAtomMem(db, id, core.VertexType), make(map[string]*core.AtomSet), make(map[string]*core.AtomSet)}
 	return vertex
 }
 

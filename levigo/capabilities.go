@@ -12,3 +12,7 @@ func (caps *graphCaps) Persistent() bool {
 func (caps *graphCaps) SortedKeys() bool {
 	return true;
 }
+
+func (caps *graphCaps) KeyIndex() bool {
+	return false;
+}

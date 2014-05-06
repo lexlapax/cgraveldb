@@ -218,3 +218,4 @@ func (graph *GraphMem) generateId() []byte {
 	}
 	return []byte(id)
 }
+

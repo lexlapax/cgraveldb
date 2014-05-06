@@ -11,6 +11,13 @@ const (
 	DirIn = 2
 )
 
+
+type AtomType string
+const (
+	VertexType AtomType = "1"
+	EdgeType ="2"
+)
+
 var (
 	ErrDoesntExist = errors.New("the object with the id does not exist")
 	ErrAlreadyExists = errors.New("the object with the id already exists")
@@ -21,6 +28,7 @@ var (
 type GraphCaps interface {
 	Persistent() bool
 	SortedKeys() bool
+	KeyIndex() bool
 }
 
 type Atom interface {
@@ -68,4 +76,11 @@ type Graph interface {
 	Open(args ...interface{}) error
 	Close() error
 	Clear() error
+}
+
+type KeyIndexableGraph interface {
+	Graph
+	CreateKeyIndex(key string, atomType AtomType) error
+	DropKeyIndex(key string, atomType AtomType) error
+	IndexedKeys(atomType AtomType) []string
 }

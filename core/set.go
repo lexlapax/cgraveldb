@@ -167,81 +167,88 @@ func (set *AtomSet) Equal(other *AtomSet) bool {
 	return true
 }
 
-// //-----edgeSet
-// type EdgeSet struct {
-// 	edgemap map[string]Edge
-// 	sync.RWMutex
-// }
 
-// func NewEdgeSet() *EdgeSet {
-// 	set := new(EdgeSet)
-// 	set.edgemap = make(map[string]Edge)
-// 	return set
-// }
+//-----bytearraySet
+type ByteArraySet struct {
+	arraymap map[string][]byte
+	sync.RWMutex
+}
 
-// func (set *EdgeSet) Add(edge Edge) {
-// 	if edge == nil || edge.Id() == nil { return }
-// 	id := string(edge.Id()[:])
-// 	set.Lock()
-// 	defer set.Unlock()
-// 	if _, ok := set.edgemap[id]; ok {
-// 		return
-// 	} else {
-// 		set.edgemap[id] = edge
-// 	}
-// 	return
-// }
+func NewByteArraySet() *ByteArraySet {
+	set := new(ByteArraySet)
+	set.arraymap = make(map[string][]byte)
+	return set
+}
 
-// func (set *EdgeSet) Del(edge Edge) {
-// 	if edge == nil || edge.Id() == nil { return }
-// 	id := string(edge.Id()[:])
-// 	set.Lock()
-// 	defer set.Unlock()
-// 	delete(set.edgemap, id)
-// 	return
-// }
+func (set *ByteArraySet) Add(ba []byte) {
+	if ba == nil { return }
+	id := string(ba[:])
+	set.Lock()
+	defer set.Unlock()
+	if _, ok := set.arraymap[id]; ok {
+		return
+	} else {
+		set.arraymap[id] = ba
+	}
+	return
+}
 
-// func (set *EdgeSet) Contains(edge Edge) bool {
-// 	if edge == nil || edge.Id() == nil { return false}
-// 	if _, ok := set.edgemap[string(edge.Id()[:])]; ok {
-// 		return true
-// 	}
-// 	return false
-// }
+func (set *ByteArraySet) Del(ba []byte) {
+	if ba == nil { return }
+	id := string(ba[:])
+	set.Lock()
+	defer set.Unlock()
+	delete(set.arraymap, id)
+	return
+}
 
-// func (set *EdgeSet) Members() []Edge {
-// 	atoms := []Edge{}
-// 	keys := []string{}
-// 	set.RLock()
-// 	defer set.RUnlock()
-// 	for k, _ := range set.edgemap {
-// 		keys = append(keys, k)
-// 	}
-// 	sort.Strings(keys)
-// 	for _, k := range keys {
-// 		atoms = append(atoms, set.edgemap[k])
-// 	}
-// 	return atoms
-// }
+func (set *ByteArraySet) Contains(ba []byte) bool {
+	if ba == nil { return false}
+	if _, ok := set.arraymap[string(ba[:])]; ok {
+		return true
+	}
+	return false
+}
 
-// func (set *EdgeSet) Count() int {
-// 	set.RLock()
-// 	defer set.RUnlock()
-// 	return len(set.edgemap)
-// }
+func (set *ByteArraySet) Members() [][]byte {
+	members := [][]byte{}
+	keys := []string{}
+	set.RLock()
+	defer set.RUnlock()
+	for k, _ := range set.arraymap {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	for _, k := range keys {
+		members = append(members, set.arraymap[k])
+	}
+	return members
+}
 
-// func (set *EdgeSet) Equal(other *EdgeSet) bool {
+func (set *ByteArraySet) Count() int {
+	set.RLock()
+	defer set.RUnlock()
+	return len(set.arraymap)
+}
 
-// 	if set.Count() != other.Count() {
-// 		return false
-// 	}
-// 	set.RLock()
-// 	defer set.RUnlock()
+func (set *ByteArraySet) Clear() {
+	set.Lock()
+	defer set.Unlock()
+	set.arraymap = make(map[string][]byte)
+}
 
-// 	for _, elem := range set.edgemap {
-// 		if !other.Contains(elem) {
-// 			return false
-// 		}
-// 	}
-// 	return true
-// }
+func (set *ByteArraySet) Equal(other *ByteArraySet) bool {
+
+	if set.Count() != other.Count() {
+		return false
+	}
+	set.RLock()
+	defer set.RUnlock()
+
+	for _, elem := range set.arraymap {
+		if !other.Contains(elem) {
+			return false
+		}
+	}
+	return true
+}

@@ -3,19 +3,14 @@ package levigo
 
 import (
 		//"fmt"
-		//"github.com/lexlapax/graveldb/core"
+		"github.com/lexlapax/graveldb/core"
 )
 
-type NodeType string
-const (
-	VertexType NodeType = "1"
-	EdgeType ="2"
-)
 
 type AtomLevigo struct {
 	db *GraphLevigo
 	id []byte
-	nodeType NodeType
+	atomType core.AtomType
 }
 
 func (node *AtomLevigo) Id() []byte {

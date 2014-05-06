@@ -1,30 +1,24 @@
 package mem
 
 import (
-		//"github.com/lexlapax/graveldb/core"
+		"github.com/lexlapax/graveldb/core"
 		"sync"
 		"sort"
-)
-
-type NodeType string
-const (
-	VertexType NodeType = "1"
-	EdgeType ="2"
 )
 
 type AtomMem struct {
 	graph *GraphMem
 	id []byte
-	nodeType NodeType
+	atomType core.AtomType
 	props map[string][]byte 
 	sync.RWMutex
 }
 
-func NewAtomMem(graph *GraphMem, id []byte, nodeType NodeType) *AtomMem {
+func NewAtomMem(graph *GraphMem, id []byte, atomType core.AtomType) *AtomMem {
 	atom := new(AtomMem)
 	atom.id = id 
 	atom.graph = graph
-	atom.nodeType = nodeType
+	atom.atomType = atomType
 	atom.props = make(map[string][]byte)
 	return atom
 }

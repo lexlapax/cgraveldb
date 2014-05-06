@@ -184,8 +184,8 @@ func (db *GraphLevigo) Open(args ...interface{}) error {
 	db.props, err = openProps(db.dbdir, db.opts)
 	if err != nil {return err}
 
-	db.keepcount(VertexType, 0)
-	db.keepcount(EdgeType, 0)
+	db.keepcount(core.VertexType, 0)
+	db.keepcount(core.EdgeType, 0)
 	db.isopen = true
 	return nil
 }
@@ -257,10 +257,10 @@ func(db *GraphLevigo) putDbProperty(prop string, val []byte) ([]byte, error){
 	return oldval, nil
 }
 
-func (db *GraphLevigo) keepcount(etype NodeType, upordown int) (uint) {
+func (db *GraphLevigo) keepcount(etype core.AtomType, upordown int) (uint) {
 	var storedcount, returncount uint
 	var key string
-	if etype == VertexType {
+	if etype == core.VertexType {
 		key = propVertiiCount
 	} else {
 		key = propEdgeCount
@@ -303,10 +303,10 @@ func (db *GraphLevigo) AddVertex(id []byte) (core.Vertex, error) {
 			return nil, core.ErrAlreadyExists
 		}
 	}
-	err := db.nodes.Put(db.wo, id, []byte(VertexType))
+	err := db.nodes.Put(db.wo, id, []byte(core.VertexType))
 	if err != nil {return nil, err}
-	vertex := &VertexLevigo{&AtomLevigo{db,id,VertexType}}
-	db.keepcount(VertexType, 1)
+	vertex := &VertexLevigo{&AtomLevigo{db,id,core.VertexType}}
+	db.keepcount(core.VertexType, 1)
 	return vertex, nil
 }
 
@@ -315,8 +315,8 @@ func (db *GraphLevigo) Vertex(id []byte) (core.Vertex, error) {
 	val,err := db.nodes.Get(db.ro, id)
 	if err != nil {return nil, err}
 	if val == nil {return nil, nil}
-	if NodeType(val) != VertexType {return nil, nil}
-	vertex := &VertexLevigo{&AtomLevigo{db, id, VertexType}}
+	if core.AtomType(val) != core.VertexType {return nil, nil}
+	vertex := &VertexLevigo{&AtomLevigo{db, id, core.VertexType}}
 	return vertex, nil
 }
 
@@ -372,7 +372,7 @@ func (db *GraphLevigo) delVertex(vertex *VertexLevigo) error {
 	err = db.nodes.Delete(db.wo, id)
 	if err != nil {return err}
 	
-	db.keepcount(VertexType, -1)
+	db.keepcount(core.VertexType, -1)
 
 	return nil
 }
@@ -387,8 +387,8 @@ func (db *GraphLevigo) Vertices() ([]core.Vertex, error) {
 	defer ro.Close()
 	it.SeekToFirst()
 	for it = it; it.Valid(); it.Next() {
-		if NodeType(it.Value()) == VertexType {
-			vertex = &VertexLevigo{&AtomLevigo{db, it.Key(), VertexType}}
+		if core.AtomType(it.Value()) == core.VertexType {
+			vertex = &VertexLevigo{&AtomLevigo{db, it.Key(), core.VertexType}}
 			vertii = append(vertii, vertex)
 		}
 	}
@@ -583,9 +583,9 @@ func (db *GraphLevigo) AddEdge(id []byte, outvertex core.Vertex, invertex core.V
 		}
 	}
 
-	err := db.nodes.Put(db.wo, id, []byte(EdgeType))
+	err := db.nodes.Put(db.wo, id, []byte(core.EdgeType))
 	if err != nil {return nil, err}
-	edge := &EdgeLevigo{&AtomLevigo{db, id, EdgeType}, outvertex.(*VertexLevigo), invertex.(*VertexLevigo), label}
+	edge := &EdgeLevigo{&AtomLevigo{db, id, core.EdgeType}, outvertex.(*VertexLevigo), invertex.(*VertexLevigo), label}
 
 	labelbyte := []byte(label)
 
@@ -604,7 +604,7 @@ func (db *GraphLevigo) AddEdge(id []byte, outvertex core.Vertex, invertex core.V
 	err = db.hexaindex.Write(db.wo, wb)
 	if err != nil {return nil, err}
 
-	db.keepcount(EdgeType, 1)
+	db.keepcount(core.EdgeType, 1)
 	return edge, nil
 }
 
@@ -628,7 +628,7 @@ func (db *GraphLevigo) Edge(id []byte) (core.Edge, error) {
 	val,err := db.nodes.Get(db.ro, id)
 	if err != nil {return nil, err}
 	if val == nil {return nil, core.ErrNilValue}
-	if NodeType(val) != EdgeType {return nil, nil}
+	if core.AtomType(val) != core.EdgeType {return nil, nil}
 
 	prefix := joinBytes(db.recsep, []byte(PSO), id)
 	ro := levigo.NewReadOptions()
@@ -639,9 +639,9 @@ func (db *GraphLevigo) Edge(id []byte) (core.Edge, error) {
 	it.Seek(prefix)
 	if it.Valid() && bytes.HasPrefix(it.Key(), prefix) {
 		outvertexid, invertexid, eid, _  := idsFromHexaKey(db.recsep, it.Key())
-		outvertex := &VertexLevigo{&AtomLevigo{db, outvertexid, VertexType}}
-		invertex := &VertexLevigo{&AtomLevigo{db, invertexid, VertexType}}
-		edge := &EdgeLevigo{&AtomLevigo{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
+		outvertex := &VertexLevigo{&AtomLevigo{db, outvertexid, core.VertexType}}
+		invertex := &VertexLevigo{&AtomLevigo{db, invertexid, core.VertexType}}
+		edge := &EdgeLevigo{&AtomLevigo{db, eid, core.EdgeType}, outvertex, invertex, string(it.Value()[:])}
 		return edge, nil
 	} else {
 		return nil, nil
@@ -709,7 +709,7 @@ func (db *GraphLevigo) delEdge(edge *EdgeLevigo) error {
 	err = db.nodes.Delete(db.wo, id)
 	if err != nil {return err}
 	
-	db.keepcount(EdgeType, -1)
+	db.keepcount(core.EdgeType, -1)
 	
 
 	return nil
@@ -728,9 +728,9 @@ func (db *GraphLevigo) Edges() ([]core.Edge, error) {
 
 	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
 		outvertexid, invertexid, eid, _  := idsFromHexaKey(db.recsep, it.Key())
-		outvertex := &VertexLevigo{&AtomLevigo{db, outvertexid, VertexType}}
-		invertex := &VertexLevigo{&AtomLevigo{db, invertexid, VertexType}}
-		edge := &EdgeLevigo{&AtomLevigo{db, eid, EdgeType}, outvertex, invertex, string(it.Value()[:])}
+		outvertex := &VertexLevigo{&AtomLevigo{db, outvertexid, core.VertexType}}
+		invertex := &VertexLevigo{&AtomLevigo{db, invertexid, core.VertexType}}
+		edge := &EdgeLevigo{&AtomLevigo{db, eid, core.EdgeType}, outvertex, invertex, string(it.Value()[:])}
 		edges = append(edges, edge)
 	}
 
@@ -740,11 +740,11 @@ func (db *GraphLevigo) Edges() ([]core.Edge, error) {
 
 
 func (db *GraphLevigo) EdgeCount() uint {
-	return db.keepcount(EdgeType, 0)
+	return db.keepcount(core.EdgeType, 0)
 }
 
 func (db *GraphLevigo) VertexCount() uint {
-	return db.keepcount(VertexType, 0)
+	return db.keepcount(core.VertexType, 0)
 }
 
 func (db *GraphLevigo) getPropKey(id []byte, prop string) ([]byte) {
