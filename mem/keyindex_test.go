@@ -16,7 +16,7 @@ type GraphKeyIndexTestSuite struct {
 }
 
 func (suite *GraphKeyIndexTestSuite) SetupSuite() {
-    suite.TestGraph = core.GetGraph(GraphImpl)
+    suite.TestGraph = core.GetGraph("memindexed")
 }
 
 func (suite *GraphKeyIndexTestSuite) TearSuite() {

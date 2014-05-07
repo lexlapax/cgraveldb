@@ -17,6 +17,21 @@ func NewStringSet() *StringSet {
 	return set
 }
 
+func (set *StringSet) AddArray(sarray []string) {
+	if sarray == nil { return }
+	set.Lock()
+	defer set.Unlock()
+	for _, s := range sarray {
+		if s == "" { continue }
+		if _, ok := set.smap[s]; ok {
+			continue
+		} else {
+			set.smap[s] = 1
+		}
+	}
+	return
+}
+
 func (set *StringSet) Add(s string) {
 	if s == "" { return }
 	set.Lock()
@@ -60,6 +75,12 @@ func (set *StringSet) Count() int {
 	set.RLock()
 	defer set.RUnlock()
 	return len(set.smap)
+}
+
+func (set *StringSet) Clear() {
+	set.Lock()
+	defer set.Unlock()
+	set.smap = make(map[string]int)
 }
 
 func (set *StringSet) Equal(other *StringSet) bool {

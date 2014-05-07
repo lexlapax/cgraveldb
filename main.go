@@ -16,6 +16,7 @@ import (
 	"reflect"
 	"strconv"
 	"encoding/binary"
+	"regexp"
 )
 
 func writeToDb(db *levigo.DB) {
@@ -248,8 +249,15 @@ func testStrconv() {
 	fmt.Printf("last=%v,lastint=%v,next=%v,nextint=%v\n",lastidstr, lastid, nextidstr, nextid)
 }
 
+func regexptest() {
+	// re := regexp.MustCompile("(.*)[,;.-_]*$")
+	re := regexp.MustCompile("[[:punct:]]+")
+	fmt.Printf("v=%v\n", re.ReplaceAllString(",abcde;,", ""))
+
+}
+
 func main() {
-	testStrconv()
+	regexptest()
 }
 
 
