@@ -3,6 +3,7 @@ package coretest
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/lexlapax/graveldb/core"
+	"github.com/lexlapax/graveldb/util"
 )
 
 type GraphKeyIndexTestSuite struct {
@@ -14,7 +15,7 @@ func (suite *GraphKeyIndexTestSuite) TestKeyIndex(){
 		suite.T().Skip()
 	}
 
-	stringset := core.NewStringSet()
+	stringset := util.NewStringSet()
 	atomset := core.NewAtomSet()
 
 	assert.Equal(suite.T(), 0, len(suite.TestGraph.IndexedKeys(core.VertexType)))

@@ -1,18 +1,18 @@
-package mem
+package levigo
 
 import (
 	"testing"
 	//"fmt"
 	// "github.com/stretchr/testify/suite"
-	"github.com/lexlapax/graveldb/core"
+	"github.com/lexlapax/graveldb/util"
 	"github.com/stretchr/testify/assert"
 )
 func TestIndexInvertedIndex(t *testing.T) {
-	// t.Skip()
+	t.Skip()
 	idx := NewInvertedIndex()
 	assert.True(t, idx != nil)
 	testdocs := make(map[string]string)
-	stringset := core.NewStringSet()
+	stringset := util.NewStringSet()
 	// testdocs["doc1"] = 
 	idx.AddDoc("doc1", "my name is inverted index")
 	assert.Equal(t, 1, idx.DocCount())

@@ -1,114 +1,89 @@
-package core
+package util
 
 import (
 		"sync"
 		"sort"
+		"fmt"
 )
 
-
-//-----atomSet
-type AtomSet struct {
-	atommap map[string]Atom
+type StringSet struct {
+	smap  map[string]int
 	sync.RWMutex
 }
 
-func NewAtomSet() *AtomSet {
-	set := new(AtomSet)
-	set.atommap = make(map[string]Atom)
+func NewStringSet() *StringSet {
+	set := new(StringSet)
+	set.smap = make(map[string]int)
 	return set
 }
 
-
-func (set *AtomSet) AddVertexArray(sarray []Vertex) {
+func (set *StringSet) AddArray(sarray []string) {
 	if sarray == nil { return }
 	set.Lock()
 	defer set.Unlock()
-	for _, atom := range sarray {
-		if atom == nil { continue }
-		id := string(atom.Id()[:])
-		if _, ok := set.atommap[id]; ok {
+	for _, s := range sarray {
+		if s == "" { continue }
+		if _, ok := set.smap[s]; ok {
 			continue
 		} else {
-			set.atommap[id] = atom
+			set.smap[s] = 1
 		}
 	}
 	return
 }
 
-func (set *AtomSet) AddEdgeArray(sarray []Edge) {
-	if sarray == nil { return }
+func (set *StringSet) Add(s string) {
+	if s == "" { return }
 	set.Lock()
 	defer set.Unlock()
-	for _, atom := range sarray {
-		if atom == nil { continue }
-		id := string(atom.Id()[:])
-		if _, ok := set.atommap[id]; ok {
-			continue
-		} else {
-			set.atommap[id] = atom
-		}
-	}
-	return
-}
-
-func (set *AtomSet) Add(atom Atom) {
-	if atom == nil || atom.Id() == nil { return }
-	id := string(atom.Id()[:])
-	set.Lock()
-	defer set.Unlock()
-	if _, ok := set.atommap[id]; ok {
+	if _, ok := set.smap[s]; ok {
 		return
 	} else {
-		set.atommap[id] = atom
+		set.smap[s] = 1
 	}
 	return
 }
 
-func (set *AtomSet) Del(atom Atom) {
-	if atom == nil || atom.Id() == nil { return }
-	id := string(atom.Id()[:])
+func (set *StringSet) Del(s string) {
+	if s == "" { return }
 	set.Lock()
 	defer set.Unlock()
-	delete(set.atommap, id)
+	delete(set.smap, s)
 	return
 }
 
-func (set *AtomSet) Contains(atom Atom) bool {
-	if atom == nil || atom.Id() == nil { return false}
-	if _, ok := set.atommap[string(atom.Id()[:])]; ok {
+func (set *StringSet) Contains(s string) bool {
+	if s == "" { return false }
+	if _, ok := set.smap[s]; ok {
 		return true
 	}
 	return false
 }
 
-func (set *AtomSet) Members() []Atom {
-	atoms := []Atom{}
+func (set *StringSet) Members() []string {
 	keys := []string{}
 	set.RLock()
 	defer set.RUnlock()
-	for k, _ := range set.atommap {
+	for k, _ := range set.smap {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	for _, k := range keys {
-		atoms = append(atoms, set.atommap[k])
-	}
-	return atoms
+	return keys
 }
 
-func (set *AtomSet) Count() int {
+func (set *StringSet) Count() int {
 	set.RLock()
 	defer set.RUnlock()
-	return len(set.atommap)
+	return len(set.smap)
 }
 
-func (set *AtomSet) Clear() {
+func (set *StringSet) Clear() {
 	set.Lock()
 	defer set.Unlock()
-	set.atommap = make(map[string]Atom)
+	set.smap = make(map[string]int)
 }
 
-func (set *AtomSet) Equal(other *AtomSet) bool {
+func (set *StringSet) Equal(other *StringSet) bool {
 
 	if set.Count() != other.Count() {
 		return false
@@ -116,12 +91,16 @@ func (set *AtomSet) Equal(other *AtomSet) bool {
 	set.RLock()
 	defer set.RUnlock()
 
-	for _, elem := range set.atommap {
-		if !other.Contains(elem) {
+	for k, _ := range set.smap {
+		if !other.Contains(k) {
 			return false
 		}
 	}
 	return true
+}
+
+func (set *StringSet) String() string {
+	return "&{Stringset[] " + fmt.Sprintf("%v", set.Members()) + "}"
 }
 
 

@@ -1,10 +1,9 @@
-package mem
+package util
 
 import (
 		"sync"
 		"strings"
 		"regexp"
-		"github.com/lexlapax/graveldb/core"
 		// "fmt"
 )
 
@@ -76,7 +75,7 @@ func (index *InvertedIndex) AddDoc(id string, doc string) {
 	var ids []string
 	for _, word := range words {
 		if curids, ok := index.wordtodoc[word]; ok {
-			idset := core.NewStringSet()
+			idset := NewStringSet()
 			idset.AddArray(curids)
 			idset.Add(id)
 			ids = idset.Members()
@@ -92,7 +91,7 @@ func (index *InvertedIndex) AddDoc(id string, doc string) {
 }
 
 func (index *InvertedIndex) Search(keywords ...string) []string {
-	idset := core.NewStringSet()
+	idset := NewStringSet()
 	if len(keywords) < 1 { return idset.Members() }
 	index.RLock()
 	defer index.RUnlock()
@@ -112,7 +111,7 @@ func (index *InvertedIndex) DelDoc(id string) {
 	if words, ok := index.doctoword[id]; ok {
 		for _, word := range words {
 			if ids, ok := index.wordtodoc[word]; ok {
-				idset := core.NewStringSet()
+				idset := NewStringSet()
 				idset.AddArray(ids)
 				idset.Del(id)
 				if idset.Count() > 0 {

@@ -12,6 +12,7 @@ import (
 		"github.com/jmhodges/levigo"
 		"path"
 		"github.com/lexlapax/graveldb/core"
+		"github.com/lexlapax/graveldb/util"
 )
 
 const (
@@ -416,7 +417,7 @@ func (db *GraphLevigo) vertexVertices(outorin core.Direction, vertex *VertexLevi
 	defer it.Close()
 	defer ro.Close()
 	it.Seek(prefix)
-	labelset := core.NewStringSet()
+	labelset := util.NewStringSet()
 	//fmt.Printf("labels = %v\n", labels)
 	if len(labels) > 0 {
 		for _, label := range labels {
@@ -475,7 +476,7 @@ func (db *GraphLevigo) vertexEdges(outorin core.Direction, vertex *VertexLevigo,
 	defer it.Close()
 	defer ro.Close()
 	it.Seek(prefix)
-	labelset := core.NewStringSet()
+	labelset := util.NewStringSet()
 	//fmt.Printf("labels = %v\n", labels)
 	if len(labels) > 0 {
 		for _, label := range labels {

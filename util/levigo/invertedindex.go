@@ -5,7 +5,7 @@ import (
 		"strings"
 		"regexp"
 		"github.com/jmhodges/levigo"
-		"github.com/lexlapax/graveldb/core"
+		"github.com/lexlapax/graveldb/util"
 		// "fmt"
 )
 
@@ -105,7 +105,7 @@ func (index *InvertedIndex) AddDoc(id string, doc string) {
 }
 
 func (index *InvertedIndex) Search(keywords ...string) []string {
-	idset := core.NewStringSet()
+	idset := util.NewStringSet()
 	if len(keywords) < 1 { return idset.Members() }
 	index.RLock()
 	defer index.RUnlock()

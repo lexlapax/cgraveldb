@@ -2,6 +2,7 @@ package mem
 
 import (
 		"github.com/lexlapax/graveldb/core"
+		"github.com/lexlapax/graveldb/util"
 		"sync"
 		//"strconv"
 		// "fmt"
@@ -14,8 +15,8 @@ func NewKeyIndex() *KeyIndex {
 }
 
 type KeyIndex struct {
-	vIdx map[string]*InvertedIndex 
-	eIdx map[string]*InvertedIndex
+	vIdx map[string]*util.InvertedIndex 
+	eIdx map[string]*util.InvertedIndex
 	vidxLk *sync.RWMutex 
 	eidxLk *sync.RWMutex
 	isopen bool
@@ -74,12 +75,12 @@ func (index *KeyIndex) createKeyIndex(key string, atomType core.AtomType) error 
 		index.vidxLk.Lock()
 		defer index.vidxLk.Unlock()
 		if _, ok := index.vIdx[key]; ok { return nil }
-		index.vIdx[key] = NewInvertedIndex()
+		index.vIdx[key] = util.NewInvertedIndex()
 	} else if atomType == core.EdgeType {
 		index.eidxLk.Lock()
 		defer index.eidxLk.Unlock()
 		if _, ok := index.eIdx[key]; ok { return nil }
-		index.eIdx[key] = NewInvertedIndex()
+		index.eIdx[key] = util.NewInvertedIndex()
 	}
 	return nil
 }
@@ -139,8 +140,8 @@ func (index *KeyIndex) searchIds(key string, value string, atomType core.AtomTyp
 
 func (index *KeyIndex) open(args ...interface{}) error {
 	if index.isopen == true { return nil }
-	index.vIdx = make(map[string]*InvertedIndex)
-	index.eIdx = make(map[string]*InvertedIndex)
+	index.vIdx = make(map[string]*util.InvertedIndex)
+	index.eIdx = make(map[string]*util.InvertedIndex)
 	index.vidxLk = &sync.RWMutex{}
 	index.eidxLk = &sync.RWMutex{}
 	index.isopen = true
@@ -158,10 +159,10 @@ func (index *KeyIndex) close() error {
 
 func (index *KeyIndex) clear() error {
 	index.vidxLk.Lock()
-	index.vIdx = make(map[string]*InvertedIndex)
+	index.vIdx = make(map[string]*util.InvertedIndex)
 	index.vidxLk.Unlock()
 	index.eidxLk.Lock()
-	index.eIdx = make(map[string]*InvertedIndex)
+	index.eIdx = make(map[string]*util.InvertedIndex)
 	index.eidxLk.Unlock()
 	return nil
 }
