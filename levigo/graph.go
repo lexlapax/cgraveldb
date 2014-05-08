@@ -285,7 +285,7 @@ func (db *GraphLevigo) keepcount(etype core.AtomType, upordown int) (uint) {
 			returncount = storedcount
 	}
 	if returncount != storedcount || val == nil {
-		bufsize := binary.Size(uint64(0))
+		bufsize := binary.Size(uint64(returncount))
 		buf := make([]byte, bufsize)
 		binary.PutUvarint(buf, uint64(returncount))
 		db.putDbProperty(key, buf)

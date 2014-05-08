@@ -2,21 +2,26 @@ package levigo
 
 import (
 	"testing"
-	//"fmt"
+	"fmt"
 	// "github.com/stretchr/testify/suite"
 	"github.com/lexlapax/graveldb/util"
 	"github.com/stretchr/testify/assert"
 )
 func TestIndexInvertedIndex(t *testing.T) {
-	t.Skip()
-	idx := NewInvertedIndex()
+	// t.Skip()
+	idxc, err := OpenIndexContainer("./testing.db")
+	assert.Nil(t, err)
+	idxc.Clear()
+	idx, err := idxc.AddIndex("test")
+	fmt.Printf("v=%v\n", idx)
 	assert.True(t, idx != nil)
 	testdocs := make(map[string]string)
 	stringset := util.NewStringSet()
-	// testdocs["doc1"] = 
+	stringset.Clear()
+	//testdocs["doc1"] = 
 	idx.AddDoc("doc1", "my name is inverted index")
-	assert.Equal(t, 1, idx.DocCount())
-	assert.Equal(t, 5, idx.TokenCount())
+	assert.Equal(t, uint(1), idx.DocCount())
+	assert.Equal(t, uint(5), idx.TokenCount())
 	tokens := idx.Tokens()
 	assert.Equal(t, 5, len(tokens))
 	stringset.Clear()
@@ -29,11 +34,11 @@ func TestIndexInvertedIndex(t *testing.T) {
 	assert.True(t, stringset.Contains("index"))
 
 	idx.AddDoc("doc2", "i index documents")
-	assert.Equal(t, 2, idx.DocCount())
-	assert.Equal(t, 7, idx.TokenCount())
+	assert.Equal(t, uint(2), idx.DocCount())
+	assert.Equal(t, uint(7), idx.TokenCount())
 	idx.AddDoc("doc3", "i am able to find documents with words")
-	assert.Equal(t, 3, idx.DocCount())
-	assert.Equal(t, 13, idx.TokenCount())
+	assert.Equal(t, uint(3), idx.DocCount())
+	assert.Equal(t, uint(13), idx.TokenCount())
 	tokens = idx.Tokens()
 	assert.Equal(t, 13, len(tokens))
 	stringset.Clear()
@@ -45,7 +50,7 @@ func TestIndexInvertedIndex(t *testing.T) {
 	for k, v := range testdocs {
 		idx.AddDoc(k, v)
 	}
-	assert.Equal(t, 5, idx.DocCount())
+	assert.Equal(t, uint(5), idx.DocCount())
 	stringset.Clear()
 	stringset.AddArray(idx.Tokens())
 	assert.Equal(t, 22, stringset.Count())
@@ -53,8 +58,8 @@ func TestIndexInvertedIndex(t *testing.T) {
 	assert.True(t, stringset.Contains("important"))
 
 
-	stringset.Clear()
-	stringset.AddArray(idx.Search("somethingnotthere"))
+	// stringset.Clear()
+	// stringset.AddArray(idx.Search("somethingnotthere"))
 
 
 	//single word searches
@@ -129,13 +134,13 @@ func TestIndexInvertedIndex(t *testing.T) {
 
 	//document deletions
 	idx.DelDoc("doc6")
-	assert.Equal(t, 5, idx.DocCount())
+	assert.Equal(t, uint(5), idx.DocCount())
 	stringset.Clear()
 	stringset.AddArray(idx.Tokens())
 	assert.Equal(t, 22, stringset.Count())
 
 	idx.DelDoc("doc4")
-	assert.Equal(t, 4, idx.DocCount())
+	assert.Equal(t, uint(4), idx.DocCount())
 	stringset.Clear()
 	stringset.AddArray(idx.Search("i"))
 	assert.Equal(t, 2, stringset.Count())
@@ -160,7 +165,7 @@ func TestIndexInvertedIndex(t *testing.T) {
 
 
 	idx.DelDoc("doc1")
-	assert.Equal(t, 3, idx.DocCount())
+	assert.Equal(t, uint(3), idx.DocCount())
 	stringset.Clear()
 	stringset.AddArray(idx.Search("name"))
 	assert.Equal(t, 1, stringset.Count())
@@ -179,6 +184,7 @@ func TestIndexInvertedIndex(t *testing.T) {
 
 	//index clear
 	idx.Clear()
-	assert.Equal(t, 0, idx.DocCount())
-	assert.Equal(t, 0, idx.TokenCount())
+	assert.Equal(t, uint(0), idx.DocCount())
+	assert.Equal(t, uint(0), idx.TokenCount())
+	idxc.Close()
 }

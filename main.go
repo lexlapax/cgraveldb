@@ -57,6 +57,7 @@ func readFromDb(db *levigo.DB){
 }
 
 
+
 func joinBytes(sep []byte, elements ...[]byte) ([]byte) {
 	if len(elements) < 1 { return []byte{} } 
 	return bytes.Join(elements, sep)
@@ -255,9 +256,36 @@ func regexptest() {
 	fmt.Printf("v=%v\n", re.ReplaceAllString(",ab-cde;,", ""))
 
 }
+var recsep = "\x1f"
 
+func stringArrayToByteArray(record []string) []byte {
+	if record == nil { return nil }
+	if len(record) < 1 { return nil } 
+	bytearr := [][]byte{}
+	for _, s := range record {
+		bytearr = append(bytearr, []byte(s))
+	}
+	return bytes.Join(bytearr, []byte(recsep))
+}
+
+func byteArrayToStringArray(record []byte) []string {
+	strings := []string{}
+	if record == nil {return strings}
+	bytearray := bytes.Split(record, []byte(recsep))
+	for _, arr := range bytearray {
+		strings = append(strings, string(arr[:]))
+	}
+	return strings
+}
+
+func bytearraytest() {
+	strarr := []string{"a", "b", "c"}
+	byterecord := stringArrayToByteArray(strarr)
+	newstrarr := byteArrayToStringArray(byterecord)
+	fmt.Printf("s=%v,\nb=%v,\nn=%v\n", strarr, byterecord, newstrarr)
+}
 func main() {
-	regexptest()
+	bytearraytest()
 }
 
 
