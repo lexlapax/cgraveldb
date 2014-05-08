@@ -251,8 +251,8 @@ func testStrconv() {
 
 func regexptest() {
 	// re := regexp.MustCompile("(.*)[,;.-_]*$")
-	re := regexp.MustCompile("[[:punct:]]+")
-	fmt.Printf("v=%v\n", re.ReplaceAllString(",abcde;,", ""))
+	re := regexp.MustCompile("^[[:punct:]]+|[[:punct:]]+$")
+	fmt.Printf("v=%v\n", re.ReplaceAllString(",ab-cde;,", ""))
 
 }
 

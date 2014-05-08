@@ -115,6 +115,39 @@ func NewAtomSet() *AtomSet {
 	return set
 }
 
+
+func (set *AtomSet) AddVertexArray(sarray []Vertex) {
+	if sarray == nil { return }
+	set.Lock()
+	defer set.Unlock()
+	for _, atom := range sarray {
+		if atom == nil { continue }
+		id := string(atom.Id()[:])
+		if _, ok := set.atommap[id]; ok {
+			continue
+		} else {
+			set.atommap[id] = atom
+		}
+	}
+	return
+}
+
+func (set *AtomSet) AddEdgeArray(sarray []Edge) {
+	if sarray == nil { return }
+	set.Lock()
+	defer set.Unlock()
+	for _, atom := range sarray {
+		if atom == nil { continue }
+		id := string(atom.Id()[:])
+		if _, ok := set.atommap[id]; ok {
+			continue
+		} else {
+			set.atommap[id] = atom
+		}
+	}
+	return
+}
+
 func (set *AtomSet) Add(atom Atom) {
 	if atom == nil || atom.Id() == nil { return }
 	id := string(atom.Id()[:])

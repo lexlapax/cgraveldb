@@ -61,6 +61,7 @@ type Vertex interface {
 
 // todo add channel interfaces for iteration
 type Graph interface {
+	KeyIndexable
 	Capabilities() GraphCaps
 	AddVertex(id []byte) (Vertex, error)
 	Vertex(id []byte) (Vertex, error)
@@ -78,9 +79,10 @@ type Graph interface {
 	Clear() error
 }
 
-type KeyIndexableGraph interface {
-	Graph
+type KeyIndexable interface {
 	CreateKeyIndex(key string, atomType AtomType) error
 	DropKeyIndex(key string, atomType AtomType) error
 	IndexedKeys(atomType AtomType) []string
+	VerticesWithProp(key string, value string) []Vertex
+	EdgesWithProp(key string, value string) []Edge
 }

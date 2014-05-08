@@ -39,6 +39,7 @@ type GraphMem struct {
 	nextid uint64
 	isopen bool 
 	caps *graphCaps
+	keyindex *KeyIndex
 }
 
 func (graph *GraphMem) Capabilities() core.GraphCaps {
@@ -180,6 +181,7 @@ func (graph *GraphMem) Open(args ...interface{}) error {
 	graph.edgelock = &sync.RWMutex{}
 	graph.isopen = true
 	graph.caps = new(graphCaps)
+	graph.keyindex = NewKeyIndex()
 	return nil
 }
 
@@ -190,10 +192,12 @@ func (graph *GraphMem) Close() error {
 	graph.edgelock = nil
 	graph.nextid = 1
 	graph.isopen = false
+	graph.keyindex.close()
 	return nil
 }
 
 func (graph *GraphMem) Clear() error {
+	graph.keyindex.clear()
 	for _, v := range graph.vertices {
 		graph.DelVertex(v)
 	}
@@ -219,3 +223,40 @@ func (graph *GraphMem) generateId() []byte {
 	return []byte(id)
 }
 
+func (graph *GraphMem) CreateKeyIndex(key string, atomType core.AtomType) error {
+	return graph.keyindex.createKeyIndex(key, atomType)
+}
+
+func (graph *GraphMem) DropKeyIndex(key string, atomType core.AtomType) error {
+	return graph.keyindex.dropKeyIndex(key, atomType)
+}
+
+func (graph *GraphMem) IndexedKeys(atomType core.AtomType) []string {
+		return graph.keyindex.indexedKeys(atomType)
+}
+
+func (graph *GraphMem) VerticesWithProp(key string, value string) []core.Vertex {
+	ids := graph.keyindex.searchIds(key, value, core.VertexType)
+	vertices := []core.Vertex{}
+	var vertex core.Vertex
+	for _, idstring := range ids {
+		vertex, _ = graph.Vertex([]byte(idstring))
+		if vertex != nil {
+			vertices = append(vertices, vertex)
+		}
+	}
+	return vertices
+}
+
+func (graph *GraphMem) EdgesWithProp(key string, value string) []core.Edge {
+	ids := graph.keyindex.searchIds(key, value, core.EdgeType)
+	edges := []core.Edge{}
+	var edge core.Edge
+	for _, idstring := range ids {
+		edge, _ = graph.Edge([]byte(idstring))
+		if edge != nil {
+			edges = append(edges, edge)
+		}
+	}
+	return edges
+}

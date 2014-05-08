@@ -7,16 +7,12 @@ import (
 	"github.com/lexlapax/graveldb/coretest"
 )
 
-func init() {
-	Register()
-}
-
 type GraphKeyIndexTestSuite struct {
 	coretest.GraphKeyIndexTestSuite
 }
 
 func (suite *GraphKeyIndexTestSuite) SetupSuite() {
-    suite.TestGraph = core.GetGraph("memindexed")
+    suite.TestGraph = core.GetGraph(GraphImpl)
 }
 
 func (suite *GraphKeyIndexTestSuite) TearSuite() {
@@ -24,6 +20,6 @@ func (suite *GraphKeyIndexTestSuite) TearSuite() {
 }
 
 func TestGraphKeyIndexTestSuite(t *testing.T) {
-	t.Skip()
+	// t.Skip()
     suite.Run(t, new(GraphKeyIndexTestSuite))
 }

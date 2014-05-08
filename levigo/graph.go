@@ -799,3 +799,24 @@ func (db *GraphLevigo) AtomPropertyKeys(node *AtomLevigo) ([]string, error) {
 	}
 	return propkeys, nil
 }
+
+
+func (db *GraphLevigo) CreateKeyIndex(key string, atomType core.AtomType) error {
+	return nil
+}
+
+func (db *GraphLevigo) DropKeyIndex(key string, atomType core.AtomType) error {
+	return nil
+}
+
+func (db *GraphLevigo) IndexedKeys(atomType core.AtomType) []string {
+	return nil
+}
+
+func (db *GraphLevigo) VerticesWithProp(key string, value string) []core.Vertex {
+	return nil
+}
+
+func (db *GraphLevigo) EdgesWithProp(key string, value string) []core.Edge {
+	return nil
+}

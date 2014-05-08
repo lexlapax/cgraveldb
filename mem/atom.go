@@ -39,14 +39,18 @@ func (atom *AtomMem) Property(prop string) ([]byte, error) {
 func (atom *AtomMem) SetProperty(prop string, value []byte) error {
 	atom.Lock()
 	defer atom.Unlock()
+	oldvalue := atom.props[prop]
 	atom.props[prop] = value
+	atom.graph.keyindex.update(prop, string(value[:]), string(oldvalue[:]), string(atom.id[:]), atom.atomType)
 	return nil
 }
 
 func (atom *AtomMem) DelProperty(prop string) error {
 	atom.Lock()
 	defer atom.Unlock()
+	oldvalue := atom.props[prop]
  	delete(atom.props, prop)
+ 	atom.graph.keyindex.remove(prop, string(oldvalue[:]), string(atom.id[:]), atom.atomType)
 	return nil
 }
 

@@ -67,7 +67,7 @@ func (index *InvertedIndex) AddDoc(id string, doc string) {
 	index.Lock()
 	defer index.Unlock()
 	words := []string{}
-	re := regexp.MustCompile("[[:punct:]]+")
+	re := regexp.MustCompile("^[[:punct:]]+|[[:punct:]]+$")
 	for _, word := range strings.Fields(doc) {
 		words = append(words,  re.ReplaceAllString(word, ""))
 	}
