@@ -57,6 +57,15 @@ func TestIndexInvertedIndex(t *testing.T) {
 	assert.True(t, stringset.Contains("sensitive"))
 	assert.True(t, stringset.Contains("important"))
 
+	stringset.Clear()
+	stringset.AddArray(idx.Docs())
+	assert.Equal(t, 5, stringset.Count())
+	assert.True(t, stringset.Contains("doc1"))
+	assert.True(t, stringset.Contains("doc2"))
+	assert.True(t, stringset.Contains("doc3"))
+	assert.True(t, stringset.Contains("doc4"))
+	assert.True(t, stringset.Contains("doc5"))
+
 
 	// stringset.Clear()
 	// stringset.AddArray(idx.Search("somethingnotthere"))
@@ -138,6 +147,9 @@ func TestIndexInvertedIndex(t *testing.T) {
 	stringset.Clear()
 	stringset.AddArray(idx.Tokens())
 	assert.Equal(t, 22, stringset.Count())
+	stringset.Clear()
+	stringset.AddArray(idx.Docs())
+	assert.Equal(t, 5, stringset.Count())
 
 	idx.DelDoc("doc4")
 	assert.Equal(t, uint(4), idx.DocCount())
@@ -162,6 +174,10 @@ func TestIndexInvertedIndex(t *testing.T) {
 	assert.Equal(t, 20, stringset.Count())
 	assert.False(t, stringset.Contains("sensitive"))
 	assert.False(t, stringset.Contains("case"))
+	stringset.Clear()
+	stringset.AddArray(idx.Docs())
+	assert.Equal(t, 4, stringset.Count())
+	assert.False(t, stringset.Contains("doc4"))
 
 
 	idx.DelDoc("doc1")
@@ -181,6 +197,10 @@ func TestIndexInvertedIndex(t *testing.T) {
 	assert.Equal(t, 18, stringset.Count())
 	assert.False(t, stringset.Contains("inverted"))
 	assert.False(t, stringset.Contains("my"))
+	stringset.Clear()
+	stringset.AddArray(idx.Docs())
+	assert.Equal(t, 3, stringset.Count())
+	assert.False(t, stringset.Contains("doc1"))
 
 	//index clear
 	idx.Clear()

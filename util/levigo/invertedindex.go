@@ -308,11 +308,23 @@ func (indexc *IndexContainer) TokenCount(indexkey string) uint {
 func (indexc *IndexContainer) Docs(indexkey string) []string {
 	indexc.RLock()
 	defer indexc.RUnlock()
-	keys := []string{}
-	// for k,_ := range indexc.doctoword {
-	// 	keys = append(keys, k)
-	// }
-	return keys
+	docs := []string{}
+	ro := levigo.NewReadOptions()
+	ro.SetFillCache(false)
+	it := indexc.fidb.NewIterator(ro)
+	defer it.Close()
+	defer ro.Close()
+	prefix := []byte(indexkey + recsep + "f" + recsep )
+	it.Seek(prefix)
+	propkeys := [][]byte{}
+	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+		propkeys = append(propkeys, it.Key())
+	}
+	for _, keyrecord := range propkeys {
+		keys := byteArrayToStringArray(recsep, keyrecord)
+		docs = append(docs, keys[len(keys) - 1])
+	}
+	return docs
 }
 
 func (indexc *IndexContainer) Tokens(indexkey string) []string {

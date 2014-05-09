@@ -4,13 +4,51 @@ import (
 		"sync"
 		"strings"
 		"regexp"
+		"errors"
 		// "fmt"
 )
 
+var (
+	ErrNilValue = errors.New("value passed cannot be nil")
+	ErrInvalidParameter = errors.New("the value of parameter passed is invalid")
+	ErrDBNotOpen = errors.New("db is not open")
+)
+
 type InvertedIndex struct {
+	indexc *IndexContainer
 	wordtodoc map[string][]string
 	doctoword map[string][]string
 	sync.RWMutex
+}
+
+type IndexContainer struct {
+	indices map[string]*InvertedIndex
+	sync.RWMutex
+	isopen bool
+}
+
+func (indexc *IndexContainer) Open(args ...interface{}) error {
+	if indexc.isopen == true {return nil }//errors.New("db already open") }
+	indexc.indices = make(map[string]*InvertedIndex)
+	return nil
+}
+
+func (indexc *IndexContainer) AddIndex(indexkey string) (*InvertedIndex, error) {
+	if !indexc.isopen {return nil, ErrDBNotOpen }
+	if indexkey == "" {return nil, ErrNilValue}
+	if _,ok := indexc.indices[indexkey]; ok {
+		return nil, nil
+	}
+	index := NewInvertedIndex()
+	index.indexc = indexc
+	indexc.indices[indexkey] = index
+	return index, nil
+}
+
+func (indexc *IndexContainer) ClearIndex(indexkey string) error {
+	if !indexc.isopen {return ErrDBNotOpen }
+	delete(indexc.indices, indexkey)
+	return nil
 }
 
 func NewInvertedIndex() *InvertedIndex {
