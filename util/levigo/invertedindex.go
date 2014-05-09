@@ -22,7 +22,9 @@ var (
 	wordtodoc = "reverse.db"	
 	doctoword = "forward.db"
 	metadb = "meta.db"	
-	recsep = "\x1f" //the ascii unit separator dec val 31
+	recsep = "\x1e" //the ascii record separator dec val 30
+	fieldsep = "\x1f" // the ascii unit separator dec val 31
+	propindexprefix = "i"
 	proprevcount = "revcount"
 	propforcount = "forcount"
 )
@@ -85,6 +87,10 @@ func (index *InvertedIndex) Delete() {
 
 func (index *InvertedIndex) Clear() {
 	index.indexc.ClearIndex(index.indexkey)
+}
+
+func (index *InvertedIndex) Key() string {
+	return index.indexkey
 }
 
 
@@ -193,19 +199,53 @@ func OpenIndexContainer(dbdir string) (*IndexContainer, error ) {
 	return indexc, nil
 }
 
+func (indexc *IndexContainer) HasIndex(indexkey string) bool {
+	if !indexc.isopen { return false }
+	indexc.RLock()
+	defer indexc.RUnlock()
+	val, err := indexc.getDbProperty(propindexprefix + recsep + indexkey + recsep + propforcount)
+	if val == nil { return false }
+	if err != nil { return false }
+	return true
+}
+
+func (indexc *IndexContainer) Indices() ([]string, error) {
+	if !indexc.isopen { return nil, ErrDBNotOpen }
+	indexc.RLock()
+	defer indexc.RUnlock()
+	indicesset := util.NewStringSet()
+	ro := levigo.NewReadOptions()
+	ro.SetFillCache(false)
+	it := indexc.metadb.NewIterator(ro)
+	defer it.Close()
+	defer ro.Close()
+	prefix := []byte(propindexprefix + recsep )
+	it.Seek(prefix)
+	propkeys := [][]byte{}
+	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+		propkeys = append(propkeys, it.Key())
+	}
+	for _, keyrecord := range propkeys {
+		keys := byteArrayToStringArray(recsep, keyrecord)
+		indicesset.Add(keys[len(keys) - 2])
+	}
+	// fmt.Printf("v=%v\n", indicesset)
+	return indicesset.Members(), nil
+}
+
 func (indexc *IndexContainer) AddIndex(indexkey string) (*InvertedIndex, error) {
 	if !indexc.isopen {return nil, ErrDBNotOpen }
 	if indexkey == "" {return nil, ErrNilValue}
 	index := &InvertedIndex{indexc, indexkey}
-	indexc.keepcount(indexkey + recsep + "propforcount", 0)
-	indexc.keepcount(indexkey + recsep + "proprevcount", 0)
+	indexc.keepcount(propindexprefix + recsep + indexkey + recsep + propforcount, 0)
+	indexc.keepcount(propindexprefix + recsep + indexkey + recsep + proprevcount, 0)
 	return index, nil
 }
 
 func (indexc *IndexContainer) ClearIndex(indexkey string) error {
 	if !indexc.isopen {return ErrDBNotOpen }
 	if indexkey == "" {return ErrNilValue}
-	val, err := indexc.getDbProperty(indexkey + recsep + "propforcount")
+	val, err := indexc.getDbProperty(propindexprefix + recsep + indexkey + recsep + propforcount)
 	if val == nil { return nil }
 	if err != nil { return err }
 	
@@ -255,8 +295,8 @@ func (indexc *IndexContainer) ClearIndex(indexkey string) error {
 	bufsize := binary.Size(uint64(0))
 	buf := make([]byte, bufsize)
 	binary.PutUvarint(buf, uint64(0))
-	indexc.putDbProperty(indexkey + recsep + "propforcount", buf)
-	indexc.putDbProperty(indexkey + recsep + "proprevcount", buf)
+	indexc.putDbProperty(propindexprefix + recsep + indexkey + recsep + propforcount, buf)
+	indexc.putDbProperty(propindexprefix + recsep + indexkey + recsep + proprevcount, buf)
 
 	return nil
 }
@@ -266,8 +306,8 @@ func (indexc *IndexContainer) DelIndex(indexkey string) error {
 	if err != nil { return err }
 	indexc.Lock()
 	defer indexc.Unlock()
-	indexc.metadb.Delete(indexc.wo, []byte(indexkey + recsep + "propforcount"))
-	indexc.metadb.Delete(indexc.wo, []byte(indexkey + recsep + "proprevcount"))
+	indexc.metadb.Delete(indexc.wo, []byte(propindexprefix + recsep + indexkey + recsep + propforcount))
+	indexc.metadb.Delete(indexc.wo, []byte(propindexprefix + recsep + indexkey + recsep + proprevcount))
 	return nil
 }
 
@@ -298,11 +338,11 @@ func (indexc *IndexContainer) Close() error {
 
 
 func (indexc *IndexContainer) DocCount(indexkey string) uint {
-	return indexc.keepcount(indexkey + recsep + "propforcount", 0)
+	return indexc.keepcount(propindexprefix + recsep + indexkey + recsep + propforcount, 0)
 }
 
 func (indexc *IndexContainer) TokenCount(indexkey string) uint {
-	return indexc.keepcount(indexkey + recsep + "proprevcount", 0)
+	return indexc.keepcount(propindexprefix + recsep + indexkey + recsep + proprevcount, 0)
 }
 
 func (indexc *IndexContainer) Docs(indexkey string) []string {
@@ -400,14 +440,14 @@ func (indexc *IndexContainer) AddDoc(indexkey string, id string, doc string) {
 			ids = idset.Members()
 		} else {
 			ids = []string{id}
-			indexc.keepcount(indexkey + recsep + "proprevcount", 1)
+			indexc.keepcount(propindexprefix + recsep + indexkey + recsep + proprevcount, 1)
 		}
 		//fmt.Printf("ids=%v\n", ids)
 		indexc.ridb.Put(indexc.wo, revkey, stringArrayToByteArray(recsep, ids))
 		//increase word count
 	}
 	indexc.fidb.Put(indexc.wo, forkey, stringArrayToByteArray(recsep, words))
-	indexc.keepcount(indexkey + recsep + "propforcount", 1)
+	indexc.keepcount(propindexprefix + recsep + indexkey + recsep + propforcount, 1)
 	// // fmt.Printf("w2d=%v\n", indexc.wordtodoc)
 	// // fmt.Printf("d2w=%v\n", indexc.doctoword)
 }
@@ -451,12 +491,12 @@ func (indexc *IndexContainer) DelDoc(indexkey string, id string) {
 					indexc.ridb.Put(indexc.wo, revkey, stringArrayToByteArray(recsep, idset.Members()))
 				} else {
 					indexc.ridb.Delete(indexc.wo, revkey)
-					indexc.keepcount(indexkey + recsep + "proprevcount", -1)
+					indexc.keepcount(propindexprefix + recsep + indexkey + recsep + proprevcount, -1)
 				}
 			}
 		}
 		indexc.fidb.Delete(indexc.wo, forkey)
-		indexc.keepcount(indexkey + recsep + "propforcount", -1)
+		indexc.keepcount(propindexprefix + recsep + indexkey + recsep + propforcount, -1)
 	}
 }
 

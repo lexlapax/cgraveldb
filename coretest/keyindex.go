@@ -1,6 +1,7 @@
 package coretest
 
 import (
+	//"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/lexlapax/graveldb/core"
 	"github.com/lexlapax/graveldb/util"
@@ -16,26 +17,28 @@ func (suite *GraphKeyIndexTestSuite) TestKeyIndex(){
 	}
 
 	stringset := util.NewStringSet()
-	atomset := core.NewAtomSet()
 
 	assert.Equal(suite.T(), 0, len(suite.TestGraph.IndexedKeys(core.VertexType)))
 	assert.Equal(suite.T(), 0, len(suite.TestGraph.IndexedKeys(core.EdgeType)))
 	//create index
 	suite.TestGraph.CreateKeyIndex("name", core.VertexType)
-	suite.TestGraph.CreateKeyIndex("name", core.EdgeType)
 
 	keynames := suite.TestGraph.IndexedKeys(core.VertexType)
-	assert.Equal(suite.T(), 1, len(keynames))
-	assert.Equal(suite.T(), "name", keynames[0])
-
+	if assert.Equal(suite.T(), 1, len(keynames)) {
+		assert.Equal(suite.T(), "name", keynames[0])
+	}
+	
+	suite.TestGraph.CreateKeyIndex("name", core.EdgeType)
 	keynames = suite.TestGraph.IndexedKeys(core.EdgeType)
-	assert.Equal(suite.T(), 1, len(keynames))
-	assert.Equal(suite.T(), "name", keynames[0])
+	if assert.Equal(suite.T(), 1, len(keynames)) {
+		assert.Equal(suite.T(), "name", keynames[0])
+	}
 
 	suite.TestGraph.CreateKeyIndex("name", core.VertexType)
 	keynames = suite.TestGraph.IndexedKeys(core.VertexType)
-	assert.Equal(suite.T(), 1, len(keynames))
-	assert.Equal(suite.T(), "name", keynames[0])
+	if assert.Equal(suite.T(), 1, len(keynames)) {
+		assert.Equal(suite.T(), "name", keynames[0])
+	}
 
 	suite.TestGraph.CreateKeyIndex("weight", core.EdgeType)
 	keynames = suite.TestGraph.IndexedKeys(core.EdgeType)
@@ -57,6 +60,7 @@ func (suite *GraphKeyIndexTestSuite) TestKeyIndex(){
 	
 	//
 
+	atomset := core.NewAtomSet()
 	vid1 := []byte("vertex1")
 	vid2 := []byte("vertex2")
 	vid3 := []byte("vertex3")

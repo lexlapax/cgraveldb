@@ -14,5 +14,5 @@ func (caps *graphCaps) SortedKeys() bool {
 }
 
 func (caps *graphCaps) KeyIndex() bool {
-	return false;
+	return true;
 }
