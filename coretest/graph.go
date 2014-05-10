@@ -1,6 +1,7 @@
 package coretest
 
 import (
+	//"strings"
 	"github.com/stretchr/testify/assert"
 	"github.com/lexlapax/graveldb/core"
 )
@@ -9,6 +10,7 @@ type GraphTestSuite struct {
 	BaseTestSuite
 }
 
+
 func (suite *GraphTestSuite) TestGraphEmpty(){
 
 	//todo - graph capabilites based 
@@ -16,6 +18,24 @@ func (suite *GraphTestSuite) TestGraphEmpty(){
 	assert.Equal(suite.T(), 0, len(vertices))
 	edges, _ := suite.TestGraph.Edges()
 	assert.Equal(suite.T(), 0, len(edges))
+}
+
+func (suite *GraphTestSuite) TestGraphGuid(){
+	uuid := suite.TestGraph.Guid()
+	assert.True(suite.T(), uuid != "")
+	assert.Equal(suite.T(), 36, len(uuid))
+	//assert.Equal(suite.T(), 8, strings.IndexRune(uuid, '-'))
+	assert.Equal(suite.T(), "-", string(uuid[8]))
+	assert.Equal(suite.T(), "-", string(uuid[13]))
+	assert.Equal(suite.T(), "-", string(uuid[18]))
+	assert.Equal(suite.T(), "-", string(uuid[23]))
+	if suite.TestGraph.Capabilities().Persistent() == true {
+		suite.TestGraph.Close()
+		suite.TestGraph.Open()
+		uuid2  := suite.TestGraph.Guid()
+		assert.Equal(suite.T(), uuid, uuid2)
+	}	
+
 }
 
 

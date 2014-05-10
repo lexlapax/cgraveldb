@@ -35,6 +35,7 @@ var (
 	propEdgeCount = "edgecount"
 	propRecSep = "recsep"
 	propNextId = "nextid"
+	propUuid = "uuid"
 	register sync.Once
 )
 
@@ -87,6 +88,7 @@ type GraphLevigo struct {
 	isopen bool
 	rwlock *sync.RWMutex
 	caps *graphCaps
+	uuid string
 }
 
 func (db *GraphLevigo) nextId() []byte {
@@ -191,6 +193,16 @@ func (db *GraphLevigo) Open(args ...interface{}) error {
 	db.keepcount(core.EdgeType, 0)
 	if db.caps.KeyIndex() {
 		db.keyindex = NewKeyIndex(db.dbdir)
+	}
+	uuidbytes, err := db.getDbProperty(propUuid)
+	if uuidbytes == nil {
+		uuid, err := util.UUID()
+		if err != nil { return err }
+		uuidbytes = []byte(uuid)
+		db.putDbProperty(propUuid, uuidbytes)
+		db.uuid = uuid
+	} else {
+		db.uuid = string(uuidbytes[:])
 	}
 	db.isopen = true
 	return nil
@@ -300,6 +312,10 @@ func (db *GraphLevigo) keepcount(etype core.AtomType, upordown int) (uint) {
 		db.putDbProperty(key, buf)
 	}
 	return returncount
+}
+
+func (graph *GraphLevigo) Guid() string {
+	return graph.uuid	
 }
 
 func (db *GraphLevigo) AddVertex(id []byte) (core.Vertex, error) {

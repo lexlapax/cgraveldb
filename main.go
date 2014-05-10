@@ -7,7 +7,7 @@ package main
 
 import (
 	//"github.com/lexlapax/graveldb/levelgraph"
-	//"github.com/lexlapax/graveldb/core"
+	"github.com/lexlapax/graveldb/util"
 	"fmt"
 	"os"
 	"github.com/jmhodges/levigo"
@@ -284,8 +284,17 @@ func bytearraytest() {
 	newstrarr := byteArrayToStringArray(byterecord)
 	fmt.Printf("s=%v,\nb=%v,\nn=%v\n", strarr, byterecord, newstrarr)
 }
+
+func uuidtest() {
+	uuid, err := util.UUID()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+	}
+	fmt.Printf("%s\n", uuid)
+}
+
 func main() {
-	bytearraytest()
+	uuidtest()
 }
 
 

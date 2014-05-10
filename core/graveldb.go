@@ -62,6 +62,7 @@ type Vertex interface {
 // todo add channel interfaces for iteration
 type Graph interface {
 	KeyIndexable
+	Guid() string
 	Capabilities() GraphCaps
 	AddVertex(id []byte) (Vertex, error)
 	Vertex(id []byte) (Vertex, error)

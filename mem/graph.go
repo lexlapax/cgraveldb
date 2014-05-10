@@ -2,6 +2,7 @@ package mem
 
 import (
 		"github.com/lexlapax/graveldb/core"
+		"github.com/lexlapax/graveldb/util"
 		"sync"
 		"strconv"
 		//"fmt"
@@ -40,6 +41,7 @@ type GraphMem struct {
 	isopen bool 
 	caps *graphCaps
 	keyindex *KeyIndex
+	uuid string
 }
 
 func (graph *GraphMem) Capabilities() core.GraphCaps {
@@ -166,6 +168,10 @@ func (graph *GraphMem) Edges() ([]core.Edge, error) {
 	return edges, nil
 }
 
+func (graph *GraphMem) Guid() string {
+	return graph.uuid	
+}
+
 func (graph *GraphMem) EdgeCount() uint {
 	return uint(len(graph.edges))
 }
@@ -182,6 +188,9 @@ func (graph *GraphMem) Open(args ...interface{}) error {
 	graph.isopen = true
 	graph.caps = new(graphCaps)
 	graph.keyindex = NewKeyIndex()
+	id, err := util.UUID()
+	if err != nil { return err }
+	graph.uuid = id
 	return nil
 }
 
