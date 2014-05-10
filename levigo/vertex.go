@@ -63,13 +63,13 @@ func (vertex *VertexLevigo) InEdges(labels ...string) ([]core.Edge, error) {
 	return vertex.db.VertexInEdges(vertex, labels...)
 }
 
-func (vertex *VertexLevigo) AddEdge(id []byte, invertex core.Vertex, label string) (core.Edge, error) {
+func (vertex *VertexLevigo) AddEdge(id string, invertex core.Vertex, label string) (core.Edge, error) {
 	return vertex.db.AddEdge(id, vertex, invertex, label)
 }
 
 
 func (vertex *VertexLevigo) String() (string) {
-	str := fmt.Sprintf("<VertexLevigo:%v@%v>",vertex.IdAsString(), vertex.db)
+	str := fmt.Sprintf("<VertexLevigo:%v@%v>",vertex.Id(), vertex.db)
 	return str
 }
 

@@ -61,10 +61,10 @@ func (suite *GraphKeyIndexTestSuite) TestKeyIndex(){
 	//
 
 	atomset := core.NewAtomSet()
-	vid1 := []byte("vertex1")
-	vid2 := []byte("vertex2")
-	vid3 := []byte("vertex3")
-	vid4 := []byte("vertex4")
+	vid1 := "vertex1"
+	vid2 := "vertex2"
+	vid3 := "vertex3"
+	vid4 := "vertex4"
 
 	vertex1,_ := suite.TestGraph.AddVertex(vid1)
 	vertex2,_ := suite.TestGraph.AddVertex(vid2)
@@ -84,11 +84,11 @@ func (suite *GraphKeyIndexTestSuite) TestKeyIndex(){
 	assert.True(suite.T(), atomset.Contains(vertex1))
 
 
-	eid1 := []byte("edge1")
-	eid2 := []byte("edge2")
-	eid3 := []byte("edge3")
-	eid4 := []byte("edge4")
-	eid5 := []byte("edge5")
+	eid1 := "edge1"
+	eid2 := "edge2"
+	eid3 := "edge3"
+	eid4 := "edge4"
+	eid5 := "edge5"
 
 	edge1, _ := suite.TestGraph.AddEdge(eid1, vertex1, vertex2, "1 to 2")
 	edge2, _ := suite.TestGraph.AddEdge(eid2, vertex1, vertex3, "1 to 3")

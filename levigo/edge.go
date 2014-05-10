@@ -38,8 +38,8 @@ func (edge *EdgeLevigo) VertexIn() (core.Vertex, error) {
 }
 
 func (edge *EdgeLevigo) String() (string) {
-	str := fmt.Sprintf("<EdgeLevigo:%v,s=%v,o=%v,l=%v@%v>",edge.IdAsString(), 
-		edge.subject.IdAsString(),edge.object.IdAsString(),edge.label,edge.db)
+	str := fmt.Sprintf("<EdgeLevigo:%v,s=%v,o=%v,l=%v@%v>",edge.Id(), 
+		edge.subject.Id(),edge.object.Id(),edge.label,edge.db)
 	return str
 }
 

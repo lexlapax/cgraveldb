@@ -24,15 +24,15 @@ func BenchmarkAddKnown(b *testing.B, graph core.Graph){
 		upto := b.N
 		fromvertexint = n + 1 
 		tovertexint = n + 2
-		fromvertex, err = graph.AddVertex([]byte(fmt.Sprintf("%v%v", vertexprefix, fromvertexint)))
+		fromvertex, err = graph.AddVertex(fmt.Sprintf("%v%v", vertexprefix, fromvertexint))
 		if n == upto - 1  {
 			tovertexint = 1
-			tovertex, _ = graph.Vertex([]byte(fmt.Sprintf("%v%v", vertexprefix, tovertexint)))
+			tovertex, _ = graph.Vertex(fmt.Sprintf("%v%v", vertexprefix, tovertexint))
 		} else {
-			tovertex, _ = graph.AddVertex([]byte(fmt.Sprintf("%v%v", vertexprefix, tovertexint)))
+			tovertex, _ = graph.AddVertex(fmt.Sprintf("%v%v", vertexprefix, tovertexint))
 		}
 		fmt.Printf("f=%v,t=%v,e=%v\n", fromvertex, tovertex,err)
-		graph.AddEdge([]byte(fmt.Sprintf("%v%v", edgeprefix, n)), fromvertex, tovertex, fmt.Sprintf("%v%v to %v", labelprefix, fromvertexint, tovertexint ))
+		graph.AddEdge(fmt.Sprintf("%v%v", edgeprefix, n), fromvertex, tovertex, fmt.Sprintf("%v%v to %v", labelprefix, fromvertexint, tovertexint ))
 	}
 	fmt.Printf("vertices=%v, edges=%v\n", graph.VertexCount(), graph.EdgeCount())
 }

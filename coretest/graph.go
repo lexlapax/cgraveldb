@@ -40,9 +40,9 @@ func (suite *GraphTestSuite) TestGraphGuid(){
 
 
 func (suite *GraphTestSuite) TestGraphAdd() {
-	a,_ := suite.TestGraph.AddVertex(nil)
-	b,_ := suite.TestGraph.AddVertex(nil)
-    edge, _ := suite.TestGraph.AddEdge(nil, a, b, "knows")
+	a,_ := suite.TestGraph.AddVertex("")
+	b,_ := suite.TestGraph.AddVertex("")
+    edge, _ := suite.TestGraph.AddEdge("", a, b, "knows")
 
 	//todo - graph capabilites based 
 	vertices, _ := suite.TestGraph.Vertices()
@@ -62,10 +62,10 @@ func (suite *GraphTestSuite) TestGraphAdd() {
 
 func (suite *GraphTestSuite) TestGraphSetProperties() {
 	//todo graph capabilities based
-	a,_ := suite.TestGraph.AddVertex(nil)
-	b,_ := suite.TestGraph.AddVertex(nil)
-	suite.TestGraph.AddEdge(nil, a, b, "knows")
-	suite.TestGraph.AddEdge(nil, a, b, "knows")
+	a,_ := suite.TestGraph.AddVertex("")
+	b,_ := suite.TestGraph.AddVertex("")
+	suite.TestGraph.AddEdge("", a, b, "knows")
+	suite.TestGraph.AddEdge("", a, b, "knows")
 	edges, _ := b.Edges(core.DirIn)
     for _,edge := range edges {
             edge.SetProperty("key", []byte("value"))
@@ -99,11 +99,11 @@ func (suite *GraphTestSuite) TestGraphSetProperties() {
 
 func (suite *GraphTestSuite) TestGraphVertexAdd() {
 
-	vertex, err := suite.TestGraph.AddVertex(nil)
+	vertex, err := suite.TestGraph.AddVertex("")
 	assert.True(suite.T(), vertex != nil)
 	assert.True(suite.T(), err == nil)
 
-	id := []byte("somerandomstringid")
+	id := "somerandomstringid"
 	vertex, err = suite.TestGraph.AddVertex(id)
 	if assert.True(suite.T(), vertex != nil) {
 		assert.Equal(suite.T(), id, vertex.Id())
@@ -120,7 +120,7 @@ func (suite *GraphTestSuite) TestGraphCloseAndOpen() {
 	if count != 0 { suite.T().Error("should have 0 edges")}
 	count = suite.TestGraph.VertexCount()
 	if count != 0 { suite.T().Error("should have 0 vertices")}
-	suite.TestGraph.AddVertex([]byte("somerandomstringid"))
+	suite.TestGraph.AddVertex("somerandomstringid")
 	count  = suite.TestGraph.VertexCount()
 	if count != 1 { suite.T().Error("should have 1 vertex")}
 	if suite.TestGraph.Capabilities().Persistent() == true {
@@ -133,8 +133,8 @@ func (suite *GraphTestSuite) TestGraphCloseAndOpen() {
 
 func (suite *GraphTestSuite) TestGraphVertexGet() {
 
-	ida := []byte("somerandomstringid")
-	idb := []byte("idb")
+	ida := "somerandomstringid"
+	idb := "idb"
 	vertexa, _ := suite.TestGraph.AddVertex(ida)
 	vertexb,_  := suite.TestGraph.Vertex(ida)
 	assert.Equal(suite.T(), vertexa, vertexb)
@@ -147,7 +147,7 @@ func (suite *GraphTestSuite) TestGraphVertexGet() {
 
 func (suite *GraphTestSuite) TestGraphVertexDel() {
 
-	ida := []byte("somerandomstringid")
+	ida := "somerandomstringid"
 	err := suite.TestGraph.DelVertex(nil)
 	assert.Equal(suite.T(), core.ErrNilValue, err)
 	vertex1, _ := suite.TestGraph.AddVertex(ida)
@@ -165,7 +165,7 @@ func (suite *GraphTestSuite) TestGraphVertexCount() {
 
 	assert.Equal(suite.T(), uint(0), suite.TestGraph.VertexCount())
 
-	ida := []byte("somerandomstringid")
+	ida := "somerandomstringid"
 	vertexa,_ := suite.TestGraph.AddVertex(ida)
 	assert.Equal(suite.T(), uint(1), suite.TestGraph.VertexCount())
 
@@ -175,7 +175,7 @@ func (suite *GraphTestSuite) TestGraphVertexCount() {
 	numb := []string{"1","2","3","4","5"}
 	for _,a := range alpha {
 		for _,n := range numb { 
-			vertex, _ = suite.TestGraph.AddVertex([]byte(a + "-" + n))
+			vertex, _ = suite.TestGraph.AddVertex(a + "-" + n)
 			testvertii = append(testvertii, vertex)
 		}
 	}
@@ -192,7 +192,7 @@ func (suite *GraphTestSuite) TestGraphVertexCount() {
 
 func (suite *GraphTestSuite) TestGraphVertexGetAll() {
 
-	ida := []byte("somerandomstringid")
+	ida := "somerandomstringid"
 	testvertii := []core.Vertex{}
 	var vertex core.Vertex
 
@@ -202,7 +202,7 @@ func (suite *GraphTestSuite) TestGraphVertexGetAll() {
 	numb := []string{"1","2","3","4","5"}
 	for _,a := range alpha {
 		for _,n := range numb { 
-			vertex, _= suite.TestGraph.AddVertex([]byte(a + "-" + n))
+			vertex, _= suite.TestGraph.AddVertex(a + "-" + n)
 			testvertii = append(testvertii, vertex)
 		}
 	}
@@ -222,9 +222,9 @@ func (suite *GraphTestSuite) TestGraphVertexGetAll() {
 
 func (suite *GraphTestSuite) TestGraphEdgeAdd() {
 
-	vid1 := []byte("thisisvertex1")
-	vid2 := []byte("thisisvertex2")
-	eid1 := []byte("thisisedge1")
+	vid1 := "thisisvertex1"
+	vid2 := "thisisvertex2"
+	eid1 := "thisisedge1"
 	vertex1,_ := suite.TestGraph.AddVertex(vid1)
 	vertex2,_ := suite.TestGraph.AddVertex(vid2)
 	//fmt.Printf("v=%v\n",vertex2)
@@ -258,9 +258,9 @@ func (suite *GraphTestSuite) TestGraphEdgeAdd() {
 }
 
 func (suite *GraphTestSuite) TestGraphEdgeGet() {
-	vid1 := []byte("thisisvertex1")
-	vid2 := []byte("thisisvertex2")
-	eid1 := []byte("thisisedge1")
+	vid1 := "thisisvertex1"
+	vid2 := "thisisvertex2"
+	eid1 := "thisisedge1"
 	edge1, _ := suite.TestGraph.Edge(eid1)
 	assert.True(suite.T(), edge1 == nil)
 
@@ -271,7 +271,7 @@ func (suite *GraphTestSuite) TestGraphEdgeGet() {
 	assert.Equal(suite.T(), edge1, edge1a)
 
 	//allow duplicates 
-	eid2 := []byte("thisisedge2")
+	eid2 := "thisisedge2"
 	edge2, _ := suite.TestGraph.AddEdge(eid2, vertex1, vertex2, "edgeforward")
 	assert.Equal(suite.T(), eid2, edge2.Id())
 	testvertex,_ := edge1.VertexOut()
@@ -284,9 +284,9 @@ func (suite *GraphTestSuite) TestGraphEdgeGet() {
 
 
 func (suite *GraphTestSuite) TestGraphEdgeDel() {
-	vid1 := []byte("thisisvertex1")
-	vid2 := []byte("thisisvertex2")
-	eid1 := []byte("thisisedge1")
+	vid1 := "thisisvertex1"
+	vid2 := "thisisvertex2"
+	eid1 := "thisisedge1"
 
 	err := suite.TestGraph.DelEdge(nil)
 	assert.Equal(suite.T(), core.ErrNilValue, err)
@@ -306,9 +306,9 @@ func (suite *GraphTestSuite) TestGraphEdgeDel() {
 func (suite *GraphTestSuite) TestGraphEdgeCount() {
 	assert.Equal(suite.T(), uint(0), suite.TestGraph.EdgeCount())
 
-	vid1 := []byte("thisisvertex1")
-	vid2 := []byte("thisisvertex2")
-	eid1 := []byte("thisisedge1")
+	vid1 := "thisisvertex1"
+	vid2 := "thisisvertex2"
+	eid1 := "thisisedge1"
 
 	vertex1,_ := suite.TestGraph.AddVertex(vid1)
 	vertex2,_ := suite.TestGraph.AddVertex(vid2)
@@ -322,7 +322,7 @@ func (suite *GraphTestSuite) TestGraphEdgeCount() {
 	numb := []string{"1","2","3","4","5"}
 	for _,a := range alpha {
 		for _,n := range numb { 
-			edge, _= suite.TestGraph.AddEdge([]byte(a + "-" + n), vertex1, vertex2, "somedge")
+			edge, _= suite.TestGraph.AddEdge(a + "-" + n, vertex1, vertex2, "somedge")
 			testedges = append(testedges, edge)
 		}
 	}
@@ -339,9 +339,9 @@ func (suite *GraphTestSuite) TestGraphEdgeCount() {
 
 func (suite *GraphTestSuite) TestGraphEdgeGetAll() {
 
-	vid1 := []byte("thisisvertex1")
-	vid2 := []byte("thisisvertex2")
-	eid1 := []byte("thisisedge1")
+	vid1 := "thisisvertex1"
+	vid2 := "thisisvertex2"
+	eid1 := "thisisedge1"
 
 	vertex1,_ := suite.TestGraph.AddVertex(vid1)
 	vertex2,_ := suite.TestGraph.AddVertex(vid2)
@@ -354,7 +354,7 @@ func (suite *GraphTestSuite) TestGraphEdgeGetAll() {
 	numb := []string{"1","2","3","4","5"}
 	for _,a := range alpha {
 		for _,n := range numb { 
-			edge, _= suite.TestGraph.AddEdge([]byte(a + "-" + n), vertex1, vertex2, "somedge")
+			edge, _= suite.TestGraph.AddEdge(a + "-" + n, vertex1, vertex2, "somedge")
 			testedges.Add(edge)
 		}
 	}

@@ -9,11 +9,11 @@ import (
 
 type AtomLevigo struct {
 	db *GraphLevigo
-	id []byte
+	id string
 	atomType core.AtomType
 }
 
-func (node *AtomLevigo) Id() []byte {
+func (node *AtomLevigo) Id() string {
 	return node.id
 }
 
@@ -33,6 +33,6 @@ func (node *AtomLevigo) PropertyKeys() ([]string, error) {
 	return node.db.AtomPropertyKeys(node)
 }
 
-func (node *AtomLevigo) IdAsString() string {
-	return string(node.id[:])
-}
+// func (node *AtomLevigo) IdAsString() string {
+// 	return string(node.id[:])
+// }

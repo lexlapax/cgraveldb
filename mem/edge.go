@@ -11,7 +11,7 @@ type EdgeMem struct {
 	label string
 }
 
-func NewEdgeMem(db *GraphMem, id []byte, subject *VertexMem, object *VertexMem, label string) *EdgeMem {
+func NewEdgeMem(db *GraphMem, id string, subject *VertexMem, object *VertexMem, label string) *EdgeMem {
 	edge := &EdgeMem{NewAtomMem(db, id, core.EdgeType), subject, object, label}
 	return edge
 }

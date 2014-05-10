@@ -52,7 +52,7 @@ func (set *AtomSet) AddEdgeArray(sarray []Edge) {
 }
 
 func (set *AtomSet) Add(atom Atom) {
-	if atom == nil || atom.Id() == nil { return }
+	if atom == nil || atom.Id() == "" { return }
 	id := string(atom.Id()[:])
 	set.Lock()
 	defer set.Unlock()
@@ -65,7 +65,7 @@ func (set *AtomSet) Add(atom Atom) {
 }
 
 func (set *AtomSet) Del(atom Atom) {
-	if atom == nil || atom.Id() == nil { return }
+	if atom == nil || atom.Id() == "" { return }
 	id := string(atom.Id()[:])
 	set.Lock()
 	defer set.Unlock()
@@ -74,7 +74,7 @@ func (set *AtomSet) Del(atom Atom) {
 }
 
 func (set *AtomSet) Contains(atom Atom) bool {
-	if atom == nil || atom.Id() == nil { return false}
+	if atom == nil || atom.Id() == "" { return false}
 	if _, ok := set.atommap[string(atom.Id()[:])]; ok {
 		return true
 	}

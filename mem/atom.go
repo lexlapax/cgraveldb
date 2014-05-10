@@ -8,13 +8,13 @@ import (
 
 type AtomMem struct {
 	graph *GraphMem
-	id []byte
+	id string
 	atomType core.AtomType
 	props map[string][]byte 
 	sync.RWMutex
 }
 
-func NewAtomMem(graph *GraphMem, id []byte, atomType core.AtomType) *AtomMem {
+func NewAtomMem(graph *GraphMem, id string, atomType core.AtomType) *AtomMem {
 	atom := new(AtomMem)
 	atom.id = id 
 	atom.graph = graph
@@ -23,7 +23,7 @@ func NewAtomMem(graph *GraphMem, id []byte, atomType core.AtomType) *AtomMem {
 	return atom
 }
 
-func (atom *AtomMem) Id() []byte {
+func (atom *AtomMem) Id() string {
 	return atom.id
 }
 

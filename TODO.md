@@ -8,6 +8,7 @@ possibly a long list
 1. ~~implement second backing store~~ version -0.1.2 - in memory store
 1. ~~implement property indexes~~ version -0.1.3 - implemented property indexes
 1. ~~implement unique id for graphs~~ - done
+1. ~~refactor all methods to use string as ids (instead of []byte)~~ - version - 0.1.4 
 1. implement generic query methods 
 1. implement restful interface
 1. add benchmark tests

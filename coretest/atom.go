@@ -9,14 +9,14 @@ type AtomTestSuite struct {
 }
 
 func (suite *AtomTestSuite) TestAtomProperty(){
-	vid1 := []byte("vertex1")
-	vid2 := []byte("vertex2")
+	vid1 := "vertex1"
+	vid2 := "vertex2"
 	
 	vertex1,_ := suite.TestGraph.AddVertex(vid1)
 	vertex2,_ := suite.TestGraph.AddVertex(vid2)
 
-	eid1 := []byte("edge1")
-	eid2 := []byte("edge2")
+	eid1 := "edge1"
+	eid2 := "edge2"
 
 	edge1, _ := suite.TestGraph.AddEdge(eid1, vertex1, vertex2, "1 to 2")
 	edge2, _ := suite.TestGraph.AddEdge(eid2, vertex2, vertex1, "2 to 1")

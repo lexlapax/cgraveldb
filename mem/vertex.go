@@ -14,7 +14,7 @@ type VertexMem struct {
 	inedges map[string]*core.AtomSet
 }
 
-func NewVertexMem(db *GraphMem, id []byte) *VertexMem {
+func NewVertexMem(db *GraphMem, id string) *VertexMem {
 	//vertex := &VertexMem{NewAtomMem(db, id, VertexType), make(map[string]mapset.Set), make(map[string]mapset.Set)}
 	vertex := &VertexMem{NewAtomMem(db, id, core.VertexType), make(map[string]*core.AtomSet), make(map[string]*core.AtomSet)}
 	return vertex
@@ -139,7 +139,7 @@ func (vertex *VertexMem) InEdges(labels ...string) ([]core.Edge, error) {
 	return totaledges, nil
 }
 
-func (vertex *VertexMem) AddEdge(id []byte, invertex core.Vertex, label string) (core.Edge, error) {
+func (vertex *VertexMem) AddEdge(id string, invertex core.Vertex, label string) (core.Edge, error) {
 	return vertex.graph.AddEdge(id, vertex, invertex, label)
 }
 
