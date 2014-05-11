@@ -8,8 +8,6 @@ import (
 
 type VertexMem struct {
 	*AtomMem
-	// outedges map[string]mapset.Set
-	// inedges map[string]mapset.Set
 	outedges map[string]*core.AtomSet
 	inedges map[string]*core.AtomSet
 }
@@ -20,45 +18,121 @@ func NewVertexMem(db *GraphMem, id string) *VertexMem {
 	return vertex
 }
 
-
-func (vertex *VertexMem) Edges(direction core.Direction, labels ...string) ([]core.Edge, error) {
-	var forward, reverse []core.Edge
-	var err error
-	if direction == core.DirOut {
-		forward, err = vertex.OutEdges(labels...)
-		return forward, err
-	} else if direction == core.DirIn {
-		reverse, err = vertex.InEdges(labels...)
-		return reverse, err
+func getEdges(ch chan core.Edge, edgemap map[string]*core.AtomSet, labels ...string) {
+	if len(labels) == 0 { 
+		for _, edgeset := range edgemap {
+			if edgeset != nil && edgeset.Count() > 0 {
+				for _, edge := range edgeset.Members() {
+					ch <- edge.(core.Edge)
+				}
+			}
+		}
 	} else {
-		forward, err := vertex.OutEdges(labels...)
-		//fmt.Printf("forward edges=%v\n",forward)
-		if err != nil {return []core.Edge{}, err}
-		reverse, err := vertex.InEdges(labels...)
-		//fmt.Printf("reverse edges=%v\n",reverse)
-		if err != nil {return []core.Edge{}, err}
-		return append(forward, reverse...), nil
+		for _, label := range labels {
+			if edgeset, ok := edgemap[label]; ok {
+				if edgeset != nil && edgeset.Count() > 0 {
+					for _, edge := range edgeset.Members() {
+						ch <- edge.(core.Edge)
+					}
+				}
+			}
+		}
+
 	}
 }
 
-func (vertex *VertexMem) Vertices(direction core.Direction, labels ...string) ([]core.Vertex, error) {
-	var forward, reverse []core.Vertex
-	var err error
-	if direction == core.DirOut {
-		forward, err = vertex.OutVertices(labels...)
-		return forward, err
-	} else if direction == core.DirIn {
-		reverse, err = vertex.InVertices(labels...)
-		return reverse, err
-	} else {
-		forward, err := vertex.OutVertices(labels...)
-		//fmt.Printf("forward edges=%v\n",forward)
-		if err != nil {return []core.Vertex{}, err}
-		reverse, err := vertex.InVertices(labels...)
-		//fmt.Printf("reverse edges=%v\n",reverse)
-		if err != nil {return []core.Vertex{}, err}
-		return append(forward, reverse...), nil
+func (vertex *VertexMem) Edges(direction core.Direction, labels ...string) ([]core.Edge, error) {
+	var edges []core.Edge
+	for edge := range vertex.IterEdges(direction, labels...) {
+		edges = append(edges, edge)
 	}
+	return edges, nil
+}
+
+
+func (vertex *VertexMem) IterEdges(direction core.Direction, labels ...string) <-chan core.Edge {
+	ch := make(chan core.Edge)
+
+	go func() {
+		if direction == core.DirOut {
+			getEdges(ch, vertex.outedges, labels...)
+		} else if direction == core.DirIn {
+			getEdges(ch, vertex.inedges, labels...)
+		} else {
+			getEdges(ch, vertex.outedges, labels...)
+			getEdges(ch, vertex.inedges, labels...)
+		}
+		close(ch)
+	}()
+	return ch
+}
+
+
+func (vertex *VertexMem) IterOutEdges(labels ...string) <-chan core.Edge {
+	return vertex.IterEdges(core.DirOut, labels...)
+}
+
+func (vertex *VertexMem) IterInEdges(labels ...string) <-chan core.Edge {
+	return vertex.IterEdges(core.DirIn, labels...)
+}
+
+func (vertex *VertexMem) OutEdges(labels ...string) ([]core.Edge, error) {
+	totaledges := []core.Edge{}
+
+	for edge := range vertex.IterEdges(core.DirOut, labels...) {
+		totaledges = append(totaledges, edge)
+	}
+
+	//fmt.Printf("totaledges=%v\n", totaledges)
+	return totaledges, nil
+}
+
+
+func (vertex *VertexMem) InEdges(labels ...string) ([]core.Edge, error) {
+	totaledges := []core.Edge{}
+	for edge := range vertex.IterEdges(core.DirIn, labels...) {
+		totaledges = append(totaledges, edge)
+	}
+	//fmt.Printf("totaledges=%v\n", totaledges)
+	return totaledges, nil
+}
+
+func (vertex *VertexMem) IterVertices(direction core.Direction, labels ...string) <-chan core.Vertex {
+	ch := make(chan core.Vertex)
+
+	go func() {
+		if direction == core.DirOut {
+			for edge := range vertex.IterOutEdges(labels...) {
+				vertex,_ := edge.VertexIn()
+				ch <- vertex
+			}
+		} else if direction == core.DirIn {
+			for edge := range vertex.IterInEdges(labels...) {
+				vertex,_ := edge.VertexOut()
+				ch <- vertex
+			}
+		} else {
+			for edge := range vertex.IterOutEdges(labels...) {
+				vertex,_ := edge.VertexIn()
+				ch <- vertex
+			}
+			for edge := range vertex.IterInEdges(labels...) {
+				vertex,_ := edge.VertexOut()
+				ch <- vertex
+			}
+		}
+		close(ch)
+		}()
+	return ch
+}
+
+func (vertex *VertexMem) Vertices(direction core.Direction, labels ...string) ([]core.Vertex, error) {
+	var vertices []core.Vertex
+	for tmpvertex := range vertex.IterVertices(direction, labels...) {
+		vertices = append(vertices, tmpvertex)
+	}
+	return vertices, nil
+
 }
 
 func iterEdgeSet(edgechan <-chan interface{}, edges *[]core.Edge) {
@@ -68,76 +142,13 @@ func iterEdgeSet(edgechan <-chan interface{}, edges *[]core.Edge) {
 }
 
 func (vertex *VertexMem) OutVertices(labels ...string) ([]core.Vertex, error) {
-	totalvertices := []core.Vertex{}
-	edges,_ := vertex.OutEdges(labels...)
-	for _, edge := range edges {
-		vertex, _ := edge.VertexIn()
-		totalvertices = append(totalvertices, vertex)
-	}
-	return totalvertices, nil
+	return vertex.Vertices(core.DirOut, labels...)
 }
 
 func (vertex *VertexMem) InVertices(labels ...string) ([]core.Vertex, error) {
-	totalvertices := []core.Vertex{}
-	edges,_ := vertex.InEdges(labels...)
-	for _, edge := range edges {
-		vertex, _ := edge.VertexOut()
-		totalvertices = append(totalvertices, vertex)
-	}
-	return totalvertices, nil
+	return vertex.Vertices(core.DirIn, labels...)
 }
 
-func (vertex *VertexMem) OutEdges(labels ...string) ([]core.Edge, error) {
-	totaledges := []core.Edge{}
-	if len(labels) == 0 {
-		for _, edgeset := range vertex.outedges {
-			if edgeset != nil && edgeset.Count() > 0 {
-				for _, edge := range edgeset.Members() {
-					totaledges = append(totaledges, edge.(core.Edge))
-				}
-			}
-		}
-	} else {
-		for _, label := range labels {
-			if edgeset, ok := vertex.outedges[label]; ok {
-				if edgeset != nil && edgeset.Count() > 0 {
-					for _, edge := range edgeset.Members() {
-						totaledges = append(totaledges, edge.(core.Edge))
-					}
-				}
-			}
-		}
-	}
-
-	//fmt.Printf("totaledges=%v\n", totaledges)
-	return totaledges, nil
-}
-
-func (vertex *VertexMem) InEdges(labels ...string) ([]core.Edge, error) {
-	totaledges := []core.Edge{}
-	if len(labels) == 0 {
-		for _, edgeset := range vertex.inedges {
-			if edgeset != nil && edgeset.Count() > 0 {
-				for _, edge := range edgeset.Members() {
-					totaledges = append(totaledges, edge.(core.Edge))
-				}
-			}
-		}
-	} else {
-		for _, label := range labels {
-			if edgeset, ok := vertex.inedges[label]; ok {
-				if edgeset != nil && edgeset.Count() > 0 {
-					for _, edge := range edgeset.Members() {
-						totaledges = append(totaledges, edge.(core.Edge))
-					}
-				}
-			}
-		}
-	}
-
-	//fmt.Printf("totaledges=%v\n", totaledges)
-	return totaledges, nil
-}
 
 func (vertex *VertexMem) AddEdge(id string, invertex core.Vertex, label string) (core.Edge, error) {
 	return vertex.graph.AddEdge(id, vertex, invertex, label)

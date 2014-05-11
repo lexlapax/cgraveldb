@@ -51,10 +51,14 @@ type Edge interface {
 // todo add channel interfaces for iteration
 type Vertex interface {
 	Atom
+	IterEdges(direction Direction, labels ...string) <-chan Edge
+	IterOutEdges(labels ...string) <-chan Edge
+	IterInEdges(labels ...string) <-chan Edge
 	Edges(direction Direction, labels ...string) ([]Edge, error)
-	Vertices(direction Direction, labels ...string) ([]Vertex, error)
 	OutEdges(labels ...string) ([]Edge, error)
 	InEdges(labels ...string) ([]Edge, error)
+	IterVertices(direction Direction, labels ...string) <-chan Vertex
+	Vertices(direction Direction, labels ...string) ([]Vertex, error)
 	AddEdge(id string, invertex Vertex, label string) (Edge, error)
 	//String() string
 }
@@ -98,8 +102,8 @@ type Query interface {
 	HasKeyValue (key string, value []byte) Query
 	NoKeyValue (key string, value []byte) Query
 	Limit(limit int) Query
-	Edges() <-chan Edge
-	Vertices() <-chan Vertex
+	IterEdges() <-chan Edge
+	IterVertices() <-chan Vertex
 }
 
 type QueryGraph interface {
