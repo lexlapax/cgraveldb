@@ -1,7 +1,7 @@
 package coretest
 
 import (
-	//"fmt"
+	// "fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/lexlapax/graveldb/core"
 	"github.com/lexlapax/graveldb/util"
@@ -16,6 +16,7 @@ func (suite *GraphKeyIndexTestSuite) TestKeyIndex(){
 		suite.T().Skip()
 	}
 
+	//basic indexes
 	stringset := util.NewStringSet()
 
 	assert.Equal(suite.T(), 0, len(suite.TestGraph.IndexedKeys(core.VertexType)))
@@ -49,6 +50,7 @@ func (suite *GraphKeyIndexTestSuite) TestKeyIndex(){
 	assert.True(suite.T(), stringset.Contains("name"))
 	assert.True(suite.T(), stringset.Contains("weight"))
 
+	// getting vertices / edges with property names and values
 	// this is what we will test
 	// v1 points to v2 and v3 which both point to v4 which points back to v1
 
@@ -109,6 +111,7 @@ func (suite *GraphKeyIndexTestSuite) TestKeyIndex(){
 	atomset.AddEdgeArray(edges)
 	assert.True(suite.T(), atomset.Contains(edge5))
 
+	// multiple results
 	edge1.SetProperty("weight", []byte("10"))
 	edge2.SetProperty("weight", []byte("10"))
 	edge3.SetProperty("weight", []byte("10"))
@@ -128,6 +131,29 @@ func (suite *GraphKeyIndexTestSuite) TestKeyIndex(){
 	assert.True(suite.T(), atomset.Contains(edge4))
 	assert.True(suite.T(), atomset.Contains(edge5))
 
+	//value contains search
+	suite.TestGraph.CreateKeyIndex("tag", core.VertexType)
+	vertex1.SetProperty("tag", []byte("1st vertex, lead"))
+	vertex2.SetProperty("tag", []byte("2nd vertex middle"))
+	vertex3.SetProperty("tag", []byte("3rd vertex, middle"))
+	vertex4.SetProperty("tag", []byte("4th, vertex, end"))
+	atomset.Clear()
+	atomset.AddVertexArray(suite.TestGraph.VerticesWithProp("tag", "vertex"))
+	// fmt.Printf("v=%v\n", atomset)
+	assert.Equal(suite.T(), 4, atomset.Count())
+	atomset.Clear()
+	atomset.AddVertexArray(suite.TestGraph.VerticesWithProp("tag", "middle"))
+	assert.Equal(suite.T(), 2, atomset.Count())
+	assert.True(suite.T(), atomset.Contains(vertex2))
+	assert.True(suite.T(), atomset.Contains(vertex3))
+
+	atomset.Clear()
+	atomset.AddVertexArray(suite.TestGraph.VerticesWithProp("tag", "1st lead"))
+	assert.Equal(suite.T(), 1, atomset.Count())
+	assert.True(suite.T(), atomset.Contains(vertex1))
+
+
+	//deletion
 	suite.TestGraph.DelEdge(edge5)
 
 	atomset.Clear()
@@ -143,4 +169,5 @@ func (suite *GraphKeyIndexTestSuite) TestKeyIndex(){
 	atomset.AddEdgeArray(suite.TestGraph.EdgesWithProp("weight", "10"))
 	assert.Equal(suite.T(), 1, atomset.Count())
 	assert.True(suite.T(), atomset.Contains(edge3))
+
 }

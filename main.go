@@ -140,31 +140,6 @@ func DbTest() {
 	//fmt.Println(string(getValueBytes[:]))
 	db.Close()
 }
-func testWriteChannel(cs chan int) {
-	for i := 1; i <= 10; i+= 1 {
-		cs <- i
-		fmt.Printf("sent %v\n", i)
-
-	}
-}
-
-
-func testReadChannel(cs <-chan int, arr *[]int) {
-	for s:= range cs {
-		*arr = append(*arr, s)
-		fmt.Printf("received = %v\n",s)
-	}
-}
-
-
-func testChannel() {
-	cs := make(chan int)
-	intarr := []int{}
-	go testWriteChannel(cs)
-	go testReadChannel(cs, &intarr)
-	time.Sleep(1 * 1.e9)
-	fmt.Printf("%v\n", intarr)
-}
 
 func testReflect() {
 	a := []byte{}
@@ -293,8 +268,52 @@ func uuidtest() {
 	fmt.Printf("%s\n", uuid)
 }
 
+func testIterChannelWrite() <-chan string {
+	ch := make(chan string)
+	go func() {
+		for i := 1; i <= 10; i++ {
+			ch <- fmt.Sprintf("i am %v", i)
+		}
+		close(ch)
+	}()
+	return ch
+}
+
+func testIterChannel() {
+	for s := range testIterChannelWrite() {
+		fmt.Println(s)
+	}
+	time.Sleep(1 * 1.e9)
+}
+
+func testWriteChannel(cs chan int) {
+	for i := 1; i <= 10; i+= 1 {
+		cs <- i
+		fmt.Printf("sent %v\n", i)
+
+	}
+}
+
+
+func testReadChannel(cs <-chan int, arr *[]int) {
+	for s:= range cs {
+		*arr = append(*arr, s)
+		fmt.Printf("received = %v\n",s)
+	}
+}
+
+
+func testChannel() {
+	cs := make(chan int)
+	intarr := []int{}
+	go testWriteChannel(cs)
+	go testReadChannel(cs, &intarr)
+	time.Sleep(1 * 1.e9)
+	fmt.Printf("%v\n", intarr)
+}
+
 func main() {
-	uuidtest()
+	testIterChannel()
 }
 
 

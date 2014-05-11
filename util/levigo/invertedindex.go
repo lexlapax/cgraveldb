@@ -2,8 +2,8 @@ package levigo
 
 import (
 		"sync"
-		"strings"
-		"regexp"
+		// "strings"
+		// "regexp"
 		"errors"
 		"path"
 		"os"
@@ -422,11 +422,7 @@ func (indexc *IndexContainer) AddDoc(indexkey string, id string, doc string) {
 	keywords, _ := indexc.fidb.Get(indexc.ro, forkey)
 	if keywords != nil { return } // already exists
 
-	words := []string{}
-	re := regexp.MustCompile("^[[:punct:]]+|[[:punct:]]+$")
-	for _, word := range strings.Fields(doc) {
-		words = append(words,  re.ReplaceAllString(word, ""))
-	}
+	words := util.WhiteSpaceTokenize(doc)
 
 	for _, word := range words {
 		revkey := []byte(revprefix + recsep + word)
@@ -458,9 +454,14 @@ func (indexc *IndexContainer) Search(indexkey string, keywords ...string) []stri
 	indexc.RLock()
 	defer indexc.RUnlock()
 	revprefix := indexkey + recsep + "r"
+	searchwords := util.NewStringSet()
+
 	for _, keyword := range keywords {
 		if keyword == "" { continue }
-		revkey := []byte(revprefix + recsep + keyword)
+		searchwords.AddArray(util.WhiteSpaceTokenize(keyword))
+	}
+	for _, word := range searchwords.Members() {
+		revkey := []byte(revprefix + recsep + word)
 		curids, err := indexc.ridb.Get(indexc.ro, revkey)
 		if curids != nil && err == nil {
 			idset.AddArray(byteArrayToStringArray(recsep, curids))

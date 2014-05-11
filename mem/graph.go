@@ -92,13 +92,24 @@ func (graph *GraphMem) DelVertex(vertex core.Vertex) error {
 }
 
 func (graph *GraphMem) Vertices() ([]core.Vertex, error) {
-	graph.vertexlock.RLock()
-	defer graph.vertexlock.RUnlock()
 	vertices := []core.Vertex{}
-	for _, v := range graph.vertices {
+	for v := range graph.IterVertices() {
 		vertices = append(vertices, v)
 	}
 	return vertices, nil
+}
+
+func (graph *GraphMem) IterVertices() <-chan core.Vertex {
+	ch := make(chan core.Vertex)
+	go func() {
+		graph.vertexlock.RLock()
+		defer graph.vertexlock.RUnlock()
+		for _, v := range graph.vertices {
+			ch <- v
+		}
+		close(ch)
+	}()
+	return ch
 }
 
 func (graph *GraphMem) AddEdge(id string, outvertex core.Vertex, invertex core.Vertex, label string) (core.Edge, error) {
@@ -159,14 +170,26 @@ func (graph *GraphMem) DelEdge(edge core.Edge) error {
 }
 
 func (graph *GraphMem) Edges() ([]core.Edge, error) {
-	graph.edgelock.RLock()
-	defer graph.edgelock.RUnlock()
 	edges := []core.Edge{}
-	for _, e := range graph.edges {
+	for e := range graph.IterEdges() {
 		edges = append(edges, e)
 	}
 	return edges, nil
 }
+
+func (graph *GraphMem) IterEdges() <-chan core.Edge {
+	ch := make(chan core.Edge)
+	go func() {
+		graph.edgelock.RLock()
+		defer graph.edgelock.RUnlock()
+		for _, e := range graph.edges {
+			ch <- e
+		}
+		close(ch)
+	}()
+	return ch
+}
+
 
 func (graph *GraphMem) Guid() string {
 	return graph.uuid	

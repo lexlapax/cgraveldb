@@ -220,6 +220,33 @@ func (suite *GraphTestSuite) TestGraphVertexGetAll() {
 	// assert.Equal(suite.T(), lastvertex, verticesget[len(verticesget) - 1])
 }
 
+func (suite *GraphTestSuite) TestGraphIterVertices() {
+
+	atomset := core.NewAtomSet()
+	atomset.Clear()
+	var vertex core.Vertex
+
+	assert.True(suite.T(), suite.TestGraph.VertexCount() == uint(0))
+
+	alpha := []string{"a","b","c","d","e"}
+	numb := []string{"1","2","3","4","5"}
+	for _,a := range alpha {
+		for _,n := range numb { 
+			vertex, _= suite.TestGraph.AddVertex(a + "-" + n)
+			atomset.Add(vertex)
+		}
+	}
+	testatomset := core.NewAtomSet()
+	testatomset.Clear()
+	for vertex = range suite.TestGraph.IterVertices() {
+		testatomset.Add(vertex)
+		assert.True(suite.T(), atomset.Contains(vertex))
+	} 	
+
+	assert.Equal(suite.T(), atomset.Count(), testatomset.Count())
+}
+
+
 func (suite *GraphTestSuite) TestGraphEdgeAdd() {
 
 	vid1 := "thisisvertex1"
@@ -366,4 +393,35 @@ func (suite *GraphTestSuite) TestGraphEdgeGetAll() {
 	suite.TestGraph.AddEdge(eid1, vertex1, vertex2, "edgeforward")
 	edges, _ = suite.TestGraph.Edges()
 	assert.Equal(suite.T(), testedges.Count() + 1, len(edges))
+}
+
+func (suite *GraphTestSuite) TestGraphIterEdges() {
+
+	vid1 := "thisisvertex1"
+	vid2 := "thisisvertex2"
+
+	vertex1,_ := suite.TestGraph.AddVertex(vid1)
+	vertex2,_ := suite.TestGraph.AddVertex(vid2)
+
+	assert.True(suite.T(), suite.TestGraph.EdgeCount() == uint(0))
+	// testedges := core.NewEdgeSet()
+	testedges := core.NewAtomSet()
+	var edge core.Edge
+	alpha := []string{"a","b","c","d","e"}
+	numb := []string{"1","2","3","4","5"}
+	for _,a := range alpha {
+		for _,n := range numb { 
+			edge, _= suite.TestGraph.AddEdge(a + "-" + n, vertex1, vertex2, "somedge")
+			testedges.Add(edge)
+		}
+	}
+
+	edges := core.NewAtomSet()
+	edges.Clear()
+	for edge = range suite.TestGraph.IterEdges() {
+		edges.Add(edge)
+		assert.True(suite.T(), testedges.Contains(edge))
+	} 	
+
+	assert.Equal(suite.T(), testedges.Count(), edges.Count())
 }

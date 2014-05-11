@@ -2,8 +2,8 @@ package util
 
 import (
 		"sync"
-		"strings"
-		"regexp"
+		// "strings"
+		// "regexp"
 		"errors"
 		// "fmt"
 )
@@ -103,12 +103,12 @@ func (index *InvertedIndex) AddDoc(id string, doc string) {
 	if id == "" || doc == "" { return }
 	index.Lock()
 	defer index.Unlock()
-	words := []string{}
-	re := regexp.MustCompile("^[[:punct:]]+|[[:punct:]]+$")
-	for _, word := range strings.Fields(doc) {
-		words = append(words,  re.ReplaceAllString(word, ""))
-	}
-
+	// words := []string{}
+	// re := regexp.MustCompile("^[[:punct:]]+|[[:punct:]]+$")
+	// for _, word := range strings.Fields(doc) {
+	// 	words = append(words,  re.ReplaceAllString(word, ""))
+	// }
+	words := WhiteSpaceTokenize(doc)
 
 	var ids []string
 	for _, word := range words {
@@ -133,9 +133,14 @@ func (index *InvertedIndex) Search(keywords ...string) []string {
 	if len(keywords) < 1 { return idset.Members() }
 	index.RLock()
 	defer index.RUnlock()
+	searchwords := NewStringSet()
+
 	for _, keyword := range keywords {
 		if keyword == "" { continue }
-		if val, ok := index.wordtodoc[keyword]; ok {
+		searchwords.AddArray(WhiteSpaceTokenize(keyword))
+	}
+	for _, word := range searchwords.Members() {
+		if val, ok := index.wordtodoc[word]; ok {
 			idset.AddArray(val)
 		}
 	}

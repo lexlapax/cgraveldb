@@ -72,6 +72,8 @@ type Graph interface {
 	Edge(id string) (Edge, error)
 	DelEdge(edge Edge) error
 	Edges() ([]Edge, error)
+	IterVertices() <-chan Vertex
+	IterEdges() <-chan Edge
 	EdgeCount() uint
 	VertexCount() uint
 	IsOpen() bool
@@ -84,6 +86,30 @@ type KeyIndexable interface {
 	CreateKeyIndex(key string, atomType AtomType) error
 	DropKeyIndex(key string, atomType AtomType) error
 	IndexedKeys(atomType AtomType) []string
+	//values are search for greedy match based on whitespace tokenization of values
+	// ie.. allows for substring matches "abcd" matches "abcd efgh" , "abcd", "1234, abcd, efgh"
 	VerticesWithProp(key string, value string) []Vertex
 	EdgesWithProp(key string, value string) []Edge
 }
+
+type Query interface {
+	HasKey (key string) Query
+	NoKey (key string) Query
+	HasKeyValue (key string, value []byte) Query
+	NoKeyValue (key string, value []byte) Query
+	Limit(limit int) Query
+	Edges() <-chan Edge
+	Vertices() <-chan Vertex
+}
+
+type QueryGraph interface {
+	Query	
+}
+
+type QueryVertex interface {
+	Query
+	HasLabels(labels ...string) QueryVertex
+	Count() int
+	Direction(dir Direction)
+}
+

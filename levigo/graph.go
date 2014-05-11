@@ -405,21 +405,33 @@ func (db *GraphLevigo) delVertex(vertex *VertexLevigo) error {
 
 func (db *GraphLevigo) Vertices() ([]core.Vertex, error) {
 	vertii := []core.Vertex{}
-	var vertex *VertexLevigo
-	ro := levigo.NewReadOptions()
-	ro.SetFillCache(false)
-	it := db.atoms.NewIterator(ro)
-	defer it.Close()
-	defer ro.Close()
-	it.SeekToFirst()
-	for it = it; it.Valid(); it.Next() {
-		if core.AtomType(it.Value()) == core.VertexType {
-			vertex = &VertexLevigo{&AtomLevigo{db, string(it.Key()[:]), core.VertexType}}
-			vertii = append(vertii, vertex)
-		}
+	for vertex := range db.IterVertices() {
+		vertii = append(vertii, vertex)
 	}
 	return vertii, nil
 }
+
+func (db *GraphLevigo) IterVertices() <-chan core.Vertex {
+	ch := make(chan core.Vertex)
+	go func() {
+		var vertex *VertexLevigo
+		ro := levigo.NewReadOptions()
+		ro.SetFillCache(false)
+		it := db.atoms.NewIterator(ro)
+		defer it.Close()
+		defer ro.Close()
+		it.SeekToFirst()
+		for it = it; it.Valid(); it.Next() {
+			if core.AtomType(it.Value()) == core.VertexType {
+				vertex = &VertexLevigo{&AtomLevigo{db, string(it.Key()[:]), core.VertexType}}
+				ch <- vertex
+			}
+		}
+		close(ch)
+	}()
+	return ch
+}
+
 
 
 func (db *GraphLevigo) vertexVertices(outorin core.Direction, vertex *VertexLevigo, labels ...string) ([]core.Vertex, error) {
@@ -743,25 +755,35 @@ func (db *GraphLevigo) delEdge(edge *EdgeLevigo) error {
 
 func (db *GraphLevigo) Edges() ([]core.Edge, error) {
 	edges := []core.Edge{}
-
-	prefix := []byte(PSO)
-	ro := levigo.NewReadOptions()
-	ro.SetFillCache(false)
-	it := db.hexaindex.NewIterator(ro)
-	defer it.Close()
-	defer ro.Close()
-	it.Seek(prefix)
-
-	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
-		outvertexid, invertexid, eid, _  := idsFromHexaKey(db.recsep, it.Key())
-		outvertex := &VertexLevigo{&AtomLevigo{db, string(outvertexid[:]), core.VertexType}}
-		invertex := &VertexLevigo{&AtomLevigo{db, string(invertexid[:]), core.VertexType}}
-		edge := &EdgeLevigo{&AtomLevigo{db, string(eid[:]), core.EdgeType}, outvertex, invertex, string(it.Value()[:])}
+	for edge := range db.IterEdges() {
 		edges = append(edges, edge)
 	}
 
 	return edges, nil
 
+}
+
+func (db *GraphLevigo) IterEdges() <-chan core.Edge {
+	ch := make(chan core.Edge)
+	go func() {
+		prefix := []byte(PSO)
+		ro := levigo.NewReadOptions()
+		ro.SetFillCache(false)
+		it := db.hexaindex.NewIterator(ro)
+		defer it.Close()
+		defer ro.Close()
+		it.Seek(prefix)
+
+		for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
+			outvertexid, invertexid, eid, _  := idsFromHexaKey(db.recsep, it.Key())
+			outvertex := &VertexLevigo{&AtomLevigo{db, string(outvertexid[:]), core.VertexType}}
+			invertex := &VertexLevigo{&AtomLevigo{db, string(invertexid[:]), core.VertexType}}
+			edge := &EdgeLevigo{&AtomLevigo{db, string(eid[:]), core.EdgeType}, outvertex, invertex, string(it.Value()[:])}
+			ch <- edge
+		}
+		close(ch)
+	}()
+	return ch
 }
 
 
