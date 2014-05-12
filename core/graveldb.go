@@ -54,10 +54,10 @@ type Vertex interface {
 	IterEdges(direction Direction, labels ...string) <-chan Edge
 	IterOutEdges(labels ...string) <-chan Edge
 	IterInEdges(labels ...string) <-chan Edge
+	IterVertices(direction Direction, labels ...string) <-chan Vertex
 	Edges(direction Direction, labels ...string) ([]Edge, error)
 	OutEdges(labels ...string) ([]Edge, error)
 	InEdges(labels ...string) ([]Edge, error)
-	IterVertices(direction Direction, labels ...string) <-chan Vertex
 	Vertices(direction Direction, labels ...string) ([]Vertex, error)
 	AddEdge(id string, invertex Vertex, label string) (Edge, error)
 	//String() string

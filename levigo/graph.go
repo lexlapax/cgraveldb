@@ -437,32 +437,22 @@ func (db *GraphLevigo) IterVertices() <-chan core.Vertex {
 func (db *GraphLevigo) vertexVertices(outorin core.Direction, vertex *VertexLevigo, labels ...string) ([]core.Vertex, error) {
 	vertices := []core.Vertex{}
 	if vertex == nil || vertex.id == "" { return vertices, core.ErrNilValue }
-	
-	// outorin == 0 is out, 1 = in
-	//prefix := 
-	var prefix []byte
-	if outorin == core.DirOut {
-		prefix = joinBytes(db.recsep, []byte(SPO), []byte(vertex.Id()))
-	} else if outorin == core.DirIn {
-		prefix = joinBytes(db.recsep, []byte(OPS), []byte(vertex.Id()))
-	} else {
-		return vertices, core.ErrDirAnyUnsupported
+
+	for findvertex := range db.vertexIterVertices(outorin, vertex, labels...) {
+		vertices = append(vertices, findvertex)
 	}
+	return vertices, nil
+
+}
+
+func (db *GraphLevigo) iterVertices(prefix []byte, ch chan core.Vertex, vertex *VertexLevigo, labelset *util.StringSet) {
+	if ch == nil ||prefix == nil { return }
 	ro := levigo.NewReadOptions()
 	ro.SetFillCache(false)
 	it := db.hexaindex.NewIterator(ro)
 	defer it.Close()
 	defer ro.Close()
 	it.Seek(prefix)
-	labelset := util.NewStringSet()
-	//fmt.Printf("labels = %v\n", labels)
-	if len(labels) > 0 {
-		for _, label := range labels {
-			labelset.Add(label)
-		}
-	}
-
-	//fmt.Printf("labelset=%v\n", labelset)
 
 	addvertex := false
 	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
@@ -484,44 +474,67 @@ func (db *GraphLevigo) vertexVertices(outorin core.Direction, vertex *VertexLevi
 			}
 			//fmt.Printf("v=%v, eid=%v\n", string(vertex.Id()[:]),string(hxrec[:]))
 			gotvertex, _ := db.Vertex(string(gotvertexid[:]))
-			vertices = append(vertices, gotvertex)
+			ch <- gotvertex
 		}
 		addvertex = false
 	}
 
-	return vertices, nil
-
 }
+
+func (db *GraphLevigo) vertexIterVertices(outorin core.Direction, vertex *VertexLevigo, labels ...string) <-chan core.Vertex {
+	if vertex == nil || vertex.id == "" { return nil }
+
+	ch := make(chan core.Vertex)
+	go func() {
+		// outorin == 0 is out, 1 = in
+		//prefix := 
+		labelset := util.NewStringSet()
+		//fmt.Printf("labels = %v\n", labels)
+		if len(labels) > 0 {
+			for _, label := range labels {
+				labelset.Add(label)
+			}
+		}
+
+		outprefix := joinBytes(db.recsep, []byte(SPO), []byte(vertex.Id()))
+		inprefix := joinBytes(db.recsep, []byte(OPS), []byte(vertex.Id()))
+
+		if outorin == core.DirOut {
+			db.iterVertices(outprefix, ch, vertex, labelset)
+		} else if outorin == core.DirIn {
+			db.iterVertices(inprefix, ch, vertex, labelset)
+		} else {
+			db.iterVertices(outprefix, ch, vertex, labelset)
+			db.iterVertices(inprefix, ch, vertex, labelset)
+		}
+
+
+		close(ch)
+	}()
+	return ch
+}
+
 
 func (db *GraphLevigo) vertexEdges(outorin core.Direction, vertex *VertexLevigo, labels ...string) ([]core.Edge, error) {
 	edges := []core.Edge{}
 	if vertex == nil || vertex.id == "" { return edges, core.ErrNilValue }
-	
-	// outorin == 0 is out, 1 = in
-	//prefix := 
-	var prefix []byte
-	if outorin == core.DirOut {
-		prefix = joinBytes(db.recsep, []byte(SPO), []byte(vertex.Id()))
-	} else if outorin == core.DirIn {
-		prefix = joinBytes(db.recsep, []byte(OPS), []byte(vertex.Id()))
-	} else {
-		return edges, core.ErrDirAnyUnsupported
+
+	for edge := range db.vertexIterEdges(outorin, vertex, labels...) {
+		edges = append(edges, edge)
 	}
+	return edges, nil
+
+}
+
+func (db *GraphLevigo) iterEdges(prefix []byte, ch chan core.Edge, vertex *VertexLevigo, labelset *util.StringSet) {
+	if ch == nil ||prefix == nil { return }
+
 	ro := levigo.NewReadOptions()
 	ro.SetFillCache(false)
 	it := db.hexaindex.NewIterator(ro)
 	defer it.Close()
 	defer ro.Close()
 	it.Seek(prefix)
-	labelset := util.NewStringSet()
-	//fmt.Printf("labels = %v\n", labels)
-	if len(labels) > 0 {
-		for _, label := range labels {
-			labelset.Add(label)
-		}
-	}
-
-	//fmt.Printf("labelset=%v\n", labelset)
 
 	addedge := false
 	for it = it; it.Valid() && bytes.HasPrefix(it.Key(), prefix); it.Next() {
@@ -536,22 +549,44 @@ func (db *GraphLevigo) vertexEdges(outorin core.Direction, vertex *VertexLevigo,
 		if addedge == true {
 			//fmt.Printf("v=%v, eid=%v\n", string(vertex.Id()[:]),string(hxrec[:]))
 			edge, _ := db.Edge(string(eid[:]))
-			edges = append(edges, edge)
+			ch <- edge
 		}
 		addedge = false
 	}
-
-	return edges, nil
-
 }
 
-func (db *GraphLevigo) VertexOutEdges(vertex *VertexLevigo, labels ...string) ([]core.Edge, error) {
-	return db.vertexEdges(core.DirOut, vertex, labels...)
+func (db *GraphLevigo) vertexIterEdges(outorin core.Direction, vertex *VertexLevigo, labels ...string) <-chan core.Edge {
+	if vertex == nil || vertex.id == "" { return nil }
+
+	ch := make(chan core.Edge)
+	go func() {
+		// outorin == 0 is out, 1 = in
+		//prefix := 
+		labelset := util.NewStringSet()
+		//fmt.Printf("labels = %v\n", labels)
+		if len(labels) > 0 {
+			for _, label := range labels {
+				labelset.Add(label)
+			}
+		}
+
+		outprefix := joinBytes(db.recsep, []byte(SPO), []byte(vertex.Id()))
+		inprefix := joinBytes(db.recsep, []byte(OPS), []byte(vertex.Id()))
+
+		if outorin == core.DirOut {
+			db.iterEdges(outprefix, ch, vertex, labelset)
+		} else if outorin == core.DirIn {
+			db.iterEdges(inprefix, ch, vertex, labelset)
+		} else {
+			db.iterEdges(outprefix, ch, vertex, labelset)
+			db.iterEdges(inprefix, ch, vertex, labelset)
+		}
+
+		close(ch)
+	}()
+	return ch
 }
 
-func (db *GraphLevigo) VertexInEdges(vertex *VertexLevigo, labels ...string) ([]core.Edge, error) {
-	return db.vertexEdges(core.DirIn, vertex, labels...)
-}
 
 // returns outvertex, invertex, edge,  error
 func idsFromHexaKey(sep []byte, atoms []byte) ([]byte, []byte, []byte, error) {
