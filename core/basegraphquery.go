@@ -6,11 +6,12 @@ import (
 
 type BaseGraphQuery struct{
 	*BaseQuery
+	graph Graph
 }
 
-func NewBaseGraphQuery(vertex *Vertex) *BaseGraphQuery {
+func NewBaseGraphQuery(graph Graph) *BaseGraphQuery {
 	basequery := newBaseQuery()
-	query := &BaseGraphQuery{basequery}
+	query := &BaseGraphQuery{basequery, graph}
 	return query
 }
 
@@ -20,9 +21,35 @@ func (query *BaseGraphQuery) Edges() []Edge {
 	return edges
 }
 
-func (query *BaseGraphQuery) Vertices() []Vertex {
-	vertices := []Vertex{}
-	if query == nil { return vertices }
-	return vertices
+func (query *BaseGraphQuery) IterEdges() <-chan Edge {
+	ch := make(chan Edge)
+	go func() {
+		count := 0
+		for edge := range query.graph.IterEdges() {
+			if query.ConditionFilter(edge) {
+				ch <- edge
+				count++
+			}
+			if count == query.Max { break }
+		}
+		close(ch)
+	}()
+	return ch
 }
 
+
+func (query *BaseGraphQuery) IterVertices()  <-chan Vertex {
+	ch := make(chan Vertex)
+	go func() {
+		count := 0
+		for vertex := range query.graph.IterVertices() {
+			if query.ConditionFilter(vertex) {
+				ch <- vertex
+				count++
+			}
+			if count == query.Max { break }
+		}
+		close(ch)
+	}()
+	return ch
+}

@@ -933,3 +933,7 @@ func (db *GraphLevigo) EdgesWithProp(key string, value string) []core.Edge {
 	}
 	return edges
 }
+
+func (db *GraphLevigo) Query() core.QueryGraph {
+	return core.NewBaseGraphQuery(db)
+}

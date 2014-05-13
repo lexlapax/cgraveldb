@@ -60,6 +60,7 @@ type Vertex interface {
 	InEdges(labels ...string) ([]Edge, error)
 	Vertices(direction Direction, labels ...string) ([]Vertex, error)
 	AddEdge(id string, invertex Vertex, label string) (Edge, error)
+	Query() QueryVertex
 	//String() string
 }
 
@@ -84,6 +85,7 @@ type Graph interface {
 	Open(args ...interface{}) error
 	Close() error
 	Clear() error
+	Query() QueryGraph
 }
 
 type KeyIndexable interface {
@@ -114,6 +116,6 @@ type QueryVertex interface {
 	Query
 	HasLabels(labels ...string) QueryVertex
 	Count() int
-	Direction(dir Direction)
+	Direction(dir Direction) QueryVertex
 }
 

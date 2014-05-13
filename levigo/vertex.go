@@ -47,6 +47,10 @@ func (vertex *VertexLevigo) AddEdge(id string, invertex core.Vertex, label strin
 	return vertex.db.AddEdge(id, vertex, invertex, label)
 }
 
+func (vertex *VertexLevigo) Query() core.QueryVertex {
+	return core.NewBaseVertexQuery(vertex)
+}
+
 func (vertex *VertexLevigo) String() (string) {
 	str := fmt.Sprintf("<VertexLevigo:%v@%v>",vertex.Id(), vertex.db)
 	return str

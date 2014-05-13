@@ -189,3 +189,7 @@ func (vertex *VertexMem) delInEdge(edge core.Edge) {
 	edges.Del(edge)
 	vertex.inedges[edge.Label()] = edges
 }
+
+func (vertex *VertexMem) Query() core.QueryVertex {
+	return core.NewBaseVertexQuery(vertex)
+}

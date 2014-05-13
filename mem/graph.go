@@ -292,3 +292,7 @@ func (graph *GraphMem) EdgesWithProp(key string, value string) []core.Edge {
 	}
 	return edges
 }
+
+func (graph *GraphMem) Query() core.QueryGraph {
+	return core.NewBaseGraphQuery(graph)
+}
