@@ -11,4 +11,5 @@ type BaseVertexQueryTestSuite struct {
 func (suite *BaseVertexQueryTestSuite) TestBaseVertexQuery(){
 
 
+
 }
