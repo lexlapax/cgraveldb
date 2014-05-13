@@ -6,33 +6,60 @@ import (
 
 type BaseVertexQuery struct{
 	*BaseQuery
-	vertex *Vertex
+	vertex Vertex
 	labels []string
 	direction Direction
 }
 
-func NewBaseVertexQuery(vertex *Vertex) *BaseVertexQuery {
+func NewBaseVertexQuery(vertex Vertex) *BaseVertexQuery {
 	basequery := newBaseQuery()
 	query := &BaseVertexQuery{basequery, vertex, []string{}, DirAny}
 	return query
 }
 
-// func (query *BaseVertexQuery) Edges() <-chan Edge {
-// 	ch := make(chan Edge)
-// 	go func() {
-// 		for _, edge := range query.vertex.Edges(query.direction, query.labels) {
+func (query *BaseQuery) ConditionFilter(atom Atom) bool {
+	meets = true
+	
 
-// 		}
+		for _, cond := range query.Conditions {
+		switch cond.Has {
+		case true:
+			assert.True(t, cond.Value == nil)
+			assert.True(t, cond.Has == true)
+		case false:
+			assert.True(t, cond.Value == nil)
+			assert.True(t, cond.Has == false)
+		}
+	}
+}
 
-// 	}()
-// 	return ch
-// }
+func (query *BaseVertexQuery) IterEdges() <-chan Edge {
+	ch := make(chan Edge)
+	go func() {
+		count := 0
+		for edge := range query.vertex.IterEdges(query.direction, query.labels...) {
+			ch <- edge
+			count++
+			if count == query.Max { break }
+		}
+		close(ch)
+	}()
+	return ch
+}
 
 
-func (query *BaseVertexQuery) Vertices() []Vertex {
-	vertices := []Vertex{}
-	if query == nil { return vertices }
-	return vertices
+func (query *BaseVertexQuery) IterVertices()  <-chan Vertex {
+	ch := make(chan Vertex)
+	go func() {
+		count := 0
+		for vertex := range query.vertex.IterVertices(query.direction, query.labels...) {
+			ch <- vertex
+			count++
+			if count == query.Max { break }
+		}
+		close(ch)
+	}()
+	return ch
 }
 
 func (query *BaseVertexQuery) HasLabels(labels ...string) *BaseVertexQuery {
